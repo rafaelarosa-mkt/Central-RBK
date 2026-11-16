@@ -51,7 +51,7 @@ async function restaurar(e: Event) {
     toast.success(`${n} registros restaurados`)
   } catch { toast.error('Não foi possível ler esse arquivo de backup.') }
 }
-const sair = () => supabase?.auth.signOut()
+const sair = () => supabase?.auth.signOut({ scope: 'local' })
 </script>
 
 <template>

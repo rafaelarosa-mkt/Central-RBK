@@ -119,18 +119,33 @@ export const arquivos = {
   },
 }
 
-export async function iniciarAuth() {
+let authIniciada = false
+export function iniciarAuth() {
+  if (authIniciada) return
+  authIniciada = true
   if (!configurado || !supabase) { authPronto.value = true; return }
-  const { data } = await supabase.auth.getSession()
-  session.value = data.session
-  authPronto.value = true
-  if (data.session?.user.app_metadata.central_rbk === true) { ouvirMudancas(); carregarTudo() }
-  supabase.auth.onAuthStateChange((ev, s) => {
-    const antes = session.value
-    session.value = s
-    if (s?.user.app_metadata.central_rbk === true && antes?.user.app_metadata.central_rbk !== true) setTimeout(() => { ouvirMudancas(); carregarTudo() }, 0)
-    if (!s && ev === 'SIGNED_OUT') { carregado.value = false; COLECOES.forEach(c => (cache[c] = {})) }
+
+  // INITIAL_SESSION restaura o login salvo antes de liberar a tela.
+  supabase.auth.onAuthStateChange((evento, atual) => {
+    const anterior = session.value
+    session.value = atual
+    authPronto.value = true
+
+    if (!atual || anterior?.user.id !== atual.user.id) {
+      carregado.value = false
+      erroDados.value = ''
+      COLECOES.forEach(col => (cache[col] = {}))
+    }
+
+    const autorizado = atual?.user.app_metadata.central_rbk === true
+    if (autorizado && (evento === 'INITIAL_SESSION'
+      || anterior?.user.id !== atual.user.id
+      || anterior?.user.app_metadata.central_rbk !== true)) {
+      setTimeout(() => {
+        if (session.value?.user.id !== atual.user.id) return
+        ouvirMudancas()
+        void carregarTudo()
+      }, 0)
+    }
   })
 }
-
-
