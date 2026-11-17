@@ -2,6 +2,10 @@
 
 Gestão de clientes, produção, agenda e financeiro da RBK Mídias com Vue 3, Vite e Supabase.
 
+## Integração com ChatGPT
+
+O conector privado de demandas está em `integrations/chatgpt/`. Consulte o README dessa pasta para configuração e publicação independente em Sites. O código foi preparado para consultar clientes e criar conteúdos de produção; é necessário publicar o plugin e configurar sua credencial privada antes de usá-lo. O deploy da Vercel não ativa essa integração sozinho.
+
 ## Supabase
 
 1. Em um projeto novo, execute a migração em `supabase/migrations/` pelo SQL Editor. Ela prepara a tabela `RBK DADOS` e o bucket privado `anexos`.
