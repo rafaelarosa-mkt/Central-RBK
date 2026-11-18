@@ -148,6 +148,29 @@ export function valoresPagamento(c: Cliente, p?: Pagamento) {
   return p?.naoCobrar ? { dinheiro: 0, permuta: 0 } : { dinheiro, permuta }
 }
 
+// Forecast by billing month / expense due month, never a bank-account balance.
+export function saldoMensal(clientes: Cliente[], pagamentos: Record<string, Pagamento>, contas: ContaPagar[], mes: string) {
+  const centavos = (valor: number) => Number.isFinite(valor) ? Math.round(Math.max(0, valor) * 100) : 0
+  let entradas = 0, recebido = 0, despesas = 0, pago = 0
+  for (const c of clientes) {
+    if (c.ativo === false) continue
+    const p = pagamentos[`${c.id}_${mes}`]
+    const valor = centavos(valoresPagamento(c, p).dinheiro)
+    entradas += valor
+    if (p?.pago) recebido += valor
+  }
+  for (const c of contas) {
+    if (c.excluida || c.vencimento.slice(0, 7) !== mes) continue
+    const valor = centavos(c.valor)
+    despesas += valor
+    if (c.pago) pago += valor
+  }
+  const saldo = entradas - despesas
+  return { entradas: entradas / 100, recebido: recebido / 100, aReceber: (entradas - recebido) / 100,
+    despesas: despesas / 100, pago: pago / 100, aPagar: (despesas - pago) / 100,
+    saldo: saldo / 100, sobra: Math.max(0, saldo) / 100, falta: Math.max(0, -saldo) / 100 }
+}
+
 export function pagStatus(c: Cliente, m: string, pags: Record<string, Pagamento>): PagStatus {
   const p = pags[`${c.id}_${m}`]
   if (p?.naoCobrar) return 'dispensado'

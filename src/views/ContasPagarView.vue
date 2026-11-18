@@ -10,13 +10,14 @@ import { Textarea } from '@/components/ui/textarea'
 import Field from '@/components/app/Field.vue'
 import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
-import { brl, fmtBR, fmtMes, statusConta, todayStr, validarConta, vencimentosMensais, gerarContasMensais, type ContaPagar } from '@/lib/domain'
-import { contasPagar, db, mesAtual } from '@/lib/store'
+import { brl, fmtBR, fmtMes, saldoMensal, statusConta, todayStr, validarConta, vencimentosMensais, gerarContasMensais, type ContaPagar } from '@/lib/domain'
+import { ativos, pagamentos, contasPagar, db, mesAtual } from '@/lib/store'
 import { salvar } from '@/lib/ui'
 
 const busca = ref('')
 const filtro = ref('todos')
 const todosMeses = ref(false)
+const saldo = computed(() => saldoMensal(ativos.value, pagamentos.value, contasPagar.value, mesAtual.value))
 const ocupado = ref(false)
 const aberto = ref(false)
 const atual = ref<ContaPagar | null>(null)
@@ -88,6 +89,23 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
     <PageHeader titulo="Contas a pagar" :sub="todosMeses ? 'Despesas de todos os períodos.' : `Despesas com vencimento em ${fmtMes(mesAtual)}.`">
       <Button @click="editar()" :disabled="ocupado"><Plus />Nova conta</Button>
     </PageHeader>
+    <Card class="gap-4">
+      <CardHeader>
+        <CardTitle>Saldo previsto de {{ fmtMes(mesAtual) }}</CardTitle>
+        <CardDescription>Entradas em dinheiro do Contas a receber menos as despesas com vencimento neste mês. Inclui valores já recebidos e pagos.</CardDescription>
+      </CardHeader>
+      <CardContent class="grid gap-4">
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Entradas previstas</p><p class="mt-1 text-2xl font-bold tabular">{{ brl(saldo.entradas) }}</p><p class="text-muted-foreground mt-2 text-xs">{{ brl(saldo.recebido) }} recebidos · {{ brl(saldo.aReceber) }} a receber</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Despesas previstas</p><p class="mt-1 text-2xl font-bold tabular">{{ brl(saldo.despesas) }}</p><p class="text-muted-foreground mt-2 text-xs">{{ brl(saldo.pago) }} pagos · {{ brl(saldo.aPagar) }} a pagar</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai sobrar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.sobra > 0 && 'text-success']">{{ brl(saldo.sobra) }}</p><p class="text-muted-foreground mt-2 text-xs">Após cobrir todas as despesas previstas.</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai faltar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.falta > 0 && 'text-destructive']">{{ brl(saldo.falta) }}</p><p class="text-muted-foreground mt-2 text-xs">Valor adicional necessário para cobrir o mês.</p></div>
+        </div>
+        <p :class="['text-sm font-semibold', saldo.saldo < 0 ? 'text-destructive' : saldo.saldo > 0 ? 'text-success' : 'text-muted-foreground']">{{ saldo.saldo > 0 ? `Previsão de sobra de ${brl(saldo.sobra)}.` : saldo.saldo < 0 ? `As despesas superam as entradas em ${brl(saldo.falta)}.` : 'Entradas e despesas previstas estão equilibradas.' }}</p>
+        <p class="text-muted-foreground text-xs">Projeção, não saldo bancário. Não inclui saldo anterior, permutas, cobranças dispensadas ou contas excluídas. Sempre considera o mês selecionado no topo, mesmo ao listar todos os meses.</p>
+        <RouterLink to="/financeiro" class="text-primary text-sm font-semibold underline underline-offset-4">Ver contas a receber deste mês</RouterLink>
+      </CardContent>
+    </Card>
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <Card class="gap-1"><CardHeader><CardDescription>Total de despesas</CardDescription><CardTitle class="text-2xl tabular">{{ brl(totais.total) }}</CardTitle></CardHeader></Card>
       <Card class="gap-1"><CardHeader><CardDescription>Pago</CardDescription><CardTitle class="text-success text-2xl tabular">{{ brl(totais.pago) }}</CardTitle></CardHeader></Card>
