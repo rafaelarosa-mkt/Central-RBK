@@ -12,7 +12,7 @@ import PageHeader from '@/components/app/PageHeader.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
 import {
   STATUS, LBL, TIPOS_EV, addDias, brl, contrato, ctLabel, fmtBR, fmtD, fmtLongo, fmtMes, pad,
-  pagStatus, prog, todayStr, vencData, ymNow, type Cliente,
+  pagStatus, prog, todayStr, vencData, valoresPagamento, ymNow, type Cliente,
 } from '@/lib/domain'
 import { agenda, ativos, clientesPorId, db, itens, mesAtual, pagamentos } from '@/lib/store'
 import { abrir, salvar } from '@/lib/ui'
@@ -30,8 +30,8 @@ const totais = computed(() => {
   for (const { c, p, st } of linhas.value) {
     meta += Number(c.videosMes) || 0; grav += p.vGrav
     metaP += Number(c.postsMes) || 0; postF += p.pFeito; aProg += p.aProg
-    const v = Number(pagamentos.value[`${c.id}_${mesAtual.value}`]?.valor ?? c.valor) || 0
-    if (st !== 'sem') prev += v
+    const v = valoresPagamento(c, pagamentos.value[`${c.id}_${mesAtual.value}`]).dinheiro
+    prev += v
     if (st === 'pago') rec += v
   }
   return { meta, grav, metaP, postF, aProg, rec, prev, falta: Math.max(0, meta - grav) }
@@ -50,7 +50,7 @@ const alertas = computed(() => {
   const out: { c: Cliente; tipo: 'hoje' | 'atrasado' | 'prox'; venc: string }[] = []
   for (const c of ativos.value) {
     const st = pagStatus(c, cur, pagamentos.value); const v = vencData(c, cur)
-    if (!v) continue
+    if (!v || valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).dinheiro <= 0) continue
     if (st === 'hoje') out.push({ c, tipo: 'hoje', venc: v })
     else if (st === 'atrasado') out.push({ c, tipo: 'atrasado', venc: v })
     else if (st === 'aberto' && v <= addDias(hoje, 5)) out.push({ c, tipo: 'prox', venc: v })
@@ -68,7 +68,7 @@ const fimContratos = computed(() => ativos.value.map(c => ({ c, k: contrato(c) }
   .sort((a, b) => a.k!.fim.localeCompare(b.k!.fim)))
 
 const pagar = (c: Cliente) => salvar(() => db.salvar('pagamentos', `${c.id}_${cur}`,
-  { clientId: c.id, mes: cur, pago: true, pagoEm: todayStr(), valor: Number(c.valor) || 0 }), `${c.nome}: pagamento registrado`)
+  { ...pagamentos.value[`${c.id}_${cur}`], clientId: c.id, mes: cur, pago: true, pagoEm: todayStr(), valor: valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).dinheiro, valorPermuta: valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).permuta }), `${c.nome}: pagamento registrado`)
 const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
 </script>
 
@@ -101,7 +101,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
             <CardContent class="text-muted-foreground text-xs">prontos, aguardando agendamento</CardContent>
           </Card>
           <Card class="gap-3">
-            <CardHeader><CardDescription>Recebido</CardDescription>
+            <CardHeader><CardDescription>Recebido em dinheiro</CardDescription>
               <CardTitle class="text-2xl font-extrabold tabular">{{ brl(totais.rec) }}</CardTitle></CardHeader>
             <CardContent class="flex flex-col gap-2">
               <Progress :model-value="pct(totais.rec, totais.prev)" indicator-class="bg-success" />
@@ -143,7 +143,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
               <ClientDot :cliente="a.c" />
               <div class="min-w-36 flex-1">
                 <p class="font-semibold leading-tight">{{ a.c.nome }}</p>
-                <p class="text-muted-foreground text-xs">{{ a.tipo === 'hoje' ? 'Vence hoje' : a.tipo === 'atrasado' ? `Atrasado desde ${fmtD(a.venc)}` : `Vence ${fmtD(a.venc)}` }} · {{ brl(a.c.valor) }}</p>
+                <p class="text-muted-foreground text-xs">{{ a.tipo === 'hoje' ? 'Vence hoje' : a.tipo === 'atrasado' ? `Atrasado desde ${fmtD(a.venc)}` : `Vence ${fmtD(a.venc)}` }} · {{ brl(valoresPagamento(a.c, pagamentos[`${a.c.id}_${cur}`]).dinheiro) }}</p>
               </div>
               <div class="flex gap-1.5">
                 <Button variant="outline" size="sm" @click="abrir({ tipo: 'cobranca', cliente: a.c, mes: cur })"><MessageCircle />Mensagem</Button>

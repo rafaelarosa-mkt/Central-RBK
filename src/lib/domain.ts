@@ -2,7 +2,7 @@
 
 export type Status = 'roteiro' | 'gravado' | 'editado' | 'programado' | 'publicado'
 export type Tipo = 'video' | 'post'
-export type PagStatus = 'pago' | 'hoje' | 'atrasado' | 'aberto' | 'sem'
+export type PagStatus = 'pago' | 'hoje' | 'atrasado' | 'aberto' | 'sem' | 'dispensado' | 'permuta'
 export type CtStatus = 'futuro' | 'vigente' | 'renovar' | 'encerrado'
 
 export interface Cliente {
@@ -15,6 +15,7 @@ export interface Cliente {
   videosMes?: number
   postsMes?: number
   valor?: number
+  valorPermuta?: number
   diaPgto?: number | null
   obsPgto?: string
   obs?: string
@@ -38,7 +39,7 @@ export interface Item {
   anexos?: Anexo[]
   [k: string]: unknown
 }
-export interface Pagamento { clientId: string; mes: string; pago: boolean; pagoEm?: string; valor?: number }
+export interface Pagamento { clientId: string; mes: string; pago: boolean; pagoEm?: string; valor?: number; valorPermuta?: number; naoCobrar?: boolean; motivo?: string }
 export interface Evento {
   id: string
   tipo: 'gravacao' | 'reuniao' | 'entrega' | 'outro'
@@ -67,8 +68,8 @@ export const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho'
 export const DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 export const DIASL = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
 export const TIPOS_EV: Record<Evento['tipo'], string> = { gravacao: 'Gravação', reuniao: 'Reunião', entrega: 'Entrega', outro: 'Outro' }
-export const PLBL: Record<PagStatus, string> = { pago: 'Pago', hoje: 'Vence hoje', atrasado: 'Atrasado', aberto: 'A vencer', sem: 'Sem vencimento' }
-export const PVAR: Record<PagStatus, 'success' | 'info' | 'danger' | 'muted'> = { pago: 'success', hoje: 'info', atrasado: 'danger', aberto: 'muted', sem: 'muted' }
+export const PLBL: Record<PagStatus, string> = { pago: 'Pago', hoje: 'Vence hoje', atrasado: 'Atrasado', aberto: 'A vencer', sem: 'Sem vencimento', dispensado: 'Não cobrar neste mês', permuta: 'Somente permuta' }
+export const PVAR: Record<PagStatus, 'success' | 'info' | 'danger' | 'muted'> = { pago: 'success', hoje: 'info', atrasado: 'danger', aberto: 'muted', sem: 'muted', dispensado: 'muted', permuta: 'info' }
 
 export const pad = (n: number) => String(n).padStart(2, '0')
 export const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -92,8 +93,17 @@ export const fmtLongo = (d: string) => { const x = new Date(d + 'T12:00'); retur
 export const cor = (c?: Cliente) => c?.cor || CORES[7]
 export const vencData = (c: Cliente, m: string) => (c.diaPgto ? `${m}-${pad(Math.min(+c.diaPgto, dim(m)))}` : null)
 
+export function valoresPagamento(c: Cliente, p?: Pagamento) {
+  const dinheiro = Math.max(0, Number(p?.valor ?? c.valor) || 0)
+  const permuta = Math.max(0, Number(p?.valorPermuta ?? c.valorPermuta) || 0)
+  return p?.naoCobrar ? { dinheiro: 0, permuta: 0 } : { dinheiro, permuta }
+}
+
 export function pagStatus(c: Cliente, m: string, pags: Record<string, Pagamento>): PagStatus {
   const p = pags[`${c.id}_${m}`]
+  if (p?.naoCobrar) return 'dispensado'
+  const { dinheiro, permuta } = valoresPagamento(c, p)
+  if (dinheiro === 0 && permuta > 0) return 'permuta'
   if (p?.pago) return 'pago'
   const v = vencData(c, m)
   if (!v) return 'sem'

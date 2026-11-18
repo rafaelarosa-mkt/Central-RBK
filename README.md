@@ -12,7 +12,17 @@ O conector privado de demandas está em `integrations/chatgpt/`. Consulte o READ
 2. Crie o usuário em **Authentication > Users** e execute o comando comentado no fim da migração com o e-mail autorizado. Só contas autorizadas leem ou gravam dados da Central. Se já estiver conectado à Central, saia e entre novamente.
 3. Use `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (chave publicável) em `.env.local`. Na Vercel, adicione as mesmas variáveis de ambiente antes do build.
 
-## Ambiente local
+## Cobranças e permutas
+
+No cadastro do cliente, preencha separadamente o valor mensal em dinheiro e o valor mensal em permuta. Valores antigos continuam como dinheiro; a permuta começa em zero até ser informada.
+
+No Financeiro, escolha o mês e use **Editar mês** para ajustar somente aquele período. **Não cobrar neste mês** retira dinheiro e permuta dos totais e remove os alertas de atraso, mantendo os valores guardados. Use **Reativar cobrança** para desfazer. Cobranças já pagas precisam ter o pagamento desfeito antes de serem dispensadas ou de terem o valor em dinheiro corrigido.
+
+A permuta aparece separadamente como prevista, sem aumentar o dinheiro recebido, a receber ou atrasado. O painel e a mensagem de cobrança usam somente a parcela em dinheiro. Os novos campos são persistidos no JSON da tabela existente; não há migração de banco necessária.
+
+Validação das regras: `node --test tests/financeiro.test.mjs` (Node 24 ou superior).
+
+## Executar localmente
 
 ```bash
 npm ci

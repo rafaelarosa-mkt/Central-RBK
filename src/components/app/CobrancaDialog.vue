@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import Field from './Field.vue'
-import { msgCobranca, pagStatus, waNum } from '@/lib/domain'
+import { msgCobranca, pagStatus, valoresPagamento, waNum } from '@/lib/domain'
 import { pagamentos } from '@/lib/store'
 import { fechar, modal } from '@/lib/ui'
 
@@ -16,7 +16,7 @@ const texto = ref('')
 watch(aberto, a => {
   if (!a || !ctx.value) return
   const { cliente: c, mes } = ctx.value
-  const v = Number(pagamentos.value[`${c.id}_${mes}`]?.valor ?? c.valor) || 0
+  const v = valoresPagamento(c, pagamentos.value[`${c.id}_${mes}`]).dinheiro
   texto.value = msgCobranca(c, mes, v, pagStatus(c, mes, pagamentos.value))
 })
 const wa = computed(() => waNum(ctx.value?.cliente.telefone))

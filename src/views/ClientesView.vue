@@ -68,7 +68,8 @@ const barra = (st: CtStatus) => (st === 'renovar' ? 'bg-warning' : st === 'encer
             <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">
               <dt class="text-muted-foreground">Plano</dt><dd class="break-words">{{ c.plano || '—' }}</dd>
               <dt class="text-muted-foreground">Por mês</dt><dd>{{ Number(c.videosMes) || 0 }} vídeos · {{ Number(c.postsMes) || 0 }} posts</dd>
-              <dt class="text-muted-foreground">Valor</dt><dd class="tabular">{{ brl(c.valor) }}<template v-if="c.diaPgto"> · dia {{ c.diaPgto }}</template></dd>
+              <dt class="text-muted-foreground">Dinheiro / mês</dt><dd class="tabular">{{ brl(c.valor) }}<template v-if="c.diaPgto"> · dia {{ c.diaPgto }}</template></dd>
+              <dt class="text-muted-foreground">Permuta / mês</dt><dd class="tabular">{{ brl(c.valorPermuta) }}</dd>
               <template v-if="c.obsPgto"><dt class="text-muted-foreground">Pgto.</dt><dd class="break-words">{{ c.obsPgto }}</dd></template>
               <dt class="text-muted-foreground">Contrato</dt><dd class="tabular">{{ contrato(c) ? `${fmtBR(contrato(c)!.ini)} a ${fmtBR(contrato(c)!.fim)}` : 'datas não informadas' }}</dd>
               <template v-if="c.contato"><dt class="text-muted-foreground">Contato</dt><dd class="break-words">{{ c.contato }}</dd></template>

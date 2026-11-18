@@ -12,7 +12,7 @@ import { fechar, modal, salvar } from '@/lib/ui'
 const aberto = computed(() => modal.atual.tipo === 'cliente')
 const atual = computed(() => (modal.atual.tipo === 'cliente' ? modal.atual.cliente : undefined))
 const f = reactive({
-  nome: '', contato: '', telefone: '', instagram: '', plano: '', videosMes: 0, postsMes: 0, valor: '' as string | number,
+  nome: '', contato: '', telefone: '', instagram: '', plano: '', videosMes: 0, postsMes: 0, valor: '' as string | number, valorPermuta: '' as string | number,
   diaPgto: '' as string | number, obsPgto: '', obs: '', cor: CORES[0], ativo: true, inicioContrato: '', mesesContrato: '' as string | number,
 })
 watch(aberto, a => {
@@ -20,7 +20,7 @@ watch(aberto, a => {
   const c = atual.value
   Object.assign(f, {
     nome: c?.nome || '', contato: c?.contato || '', telefone: c?.telefone || '', instagram: c?.instagram || '', plano: c?.plano || '',
-    videosMes: Number(c?.videosMes) || 0, postsMes: Number(c?.postsMes) || 0, valor: c?.valor ?? '', diaPgto: c?.diaPgto ?? '',
+    videosMes: Number(c?.videosMes) || 0, postsMes: Number(c?.postsMes) || 0, valor: c?.valor ?? '', valorPermuta: c?.valorPermuta ?? '', diaPgto: c?.diaPgto ?? '',
     obsPgto: c?.obsPgto || '', obs: c?.obs || '', cor: c?.cor || CORES[clientes.value.length % 8], ativo: c?.ativo !== false,
     inicioContrato: c?.inicioContrato || '', mesesContrato: c?.mesesContrato ?? '',
   })
@@ -31,9 +31,10 @@ const fim = computed(() => {
 })
 async function enviar() {
   if (!f.nome.trim()) return
+  if (![f.valor, f.valorPermuta].every(v => Number.isFinite(Number(v)) && Number(v) >= 0)) return
   const d = {
     ...f, nome: f.nome.trim(), videosMes: Number(f.videosMes) || 0, postsMes: Number(f.postsMes) || 0, valor: Number(f.valor) || 0,
-    diaPgto: Number(f.diaPgto) || null, mesesContrato: Number(f.mesesContrato) || null,
+    valorPermuta: Number(f.valorPermuta) || 0, diaPgto: Number(f.diaPgto) || null, mesesContrato: Number(f.mesesContrato) || null,
   }
   const c = atual.value
   const ok = await salvar(() => c
@@ -58,9 +59,11 @@ async function enviar() {
         <Field label="Plano" for="cPlano"><Input id="cPlano" v-model="f.plano" placeholder="Ex.: Bronze" /></Field>
         <Field label="Vídeos por mês" for="cVid"><Input id="cVid" v-model="f.videosMes" type="number" min="0" /></Field>
         <Field label="Posts por mês" for="cPost"><Input id="cPost" v-model="f.postsMes" type="number" min="0" /></Field>
-        <Field label="Valor mensal (R$)" for="cVal"><Input id="cVal" v-model="f.valor" type="number" min="0" step="0.01" /></Field>
+        <Field label="A receber em dinheiro / mês (R$)" for="cVal"><Input id="cVal" v-model="f.valor" type="number" min="0" step="0.01" /></Field>
+        <Field label="Permuta / mês (R$)" for="cPermuta"><Input id="cPermuta" v-model="f.valorPermuta" type="number" min="0" step="0.01" /></Field>
+        <p class="text-muted-foreground text-xs sm:col-span-2">Informe os valores separadamente. A permuta não entra no valor a receber em dinheiro.</p>
         <Field label="Dia do pagamento" for="cDia"><Input id="cDia" v-model="f.diaPgto" type="number" min="1" max="31" /></Field>
-        <Field label="Observação do pagamento" for="cObsP" class="sm:col-span-2"><Input id="cObsP" v-model="f.obsPgto" placeholder="Ex.: 50% em permuta" /></Field>
+        <Field label="Observação do pagamento" for="cObsP" class="sm:col-span-2"><Input id="cObsP" v-model="f.obsPgto" placeholder="Ex.: permuta em serviços de divulgação" /></Field>
         <Field label="Início do contrato" for="cIni"><Input id="cIni" v-model="f.inicioContrato" type="date" /></Field>
         <Field label="Duração (meses)" for="cMeses"><Input id="cMeses" v-model="f.mesesContrato" type="number" min="1" max="60" placeholder="Ex.: 6" /></Field>
         <p class="text-muted-foreground -mt-1 text-xs sm:col-span-2">{{ fim }}</p>
