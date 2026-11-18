@@ -52,6 +52,30 @@ export interface ContaPagar {
   pagoEm: string
   observacoes: string
   excluida?: boolean
+  recorrenciaId?: string
+  recorrenciaFim?: string
+  parcela?: number
+  totalParcelas?: number
+}
+export function vencimentosMensais(inicio: string, fim: string): string[] {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !Number.isFinite(Date.parse(inicio)) || new Date(inicio).toISOString().slice(0, 10) !== inicio) throw new Error('Informe o primeiro vencimento válido.')
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(fim) || fim < inicio.slice(0, 7)) throw new Error('O último mês deve ser igual ou posterior ao primeiro vencimento.')
+  const [ano, mes, dia] = inicio.split('-').map(Number)
+  const [anoFim, mesFim] = fim.split('-').map(Number)
+  const quantidade = (anoFim - ano) * 12 + mesFim - mes + 1
+  if (quantidade > 120) throw new Error('Informe um período de até 120 meses.')
+  return Array.from({ length: quantidade }, (_, i) => {
+    const m = addMes(inicio.slice(0, 7), i)
+    return `${m}-${pad(Math.min(dia, dim(m)))}`
+  })
+}
+
+export function gerarContasMensais(base: Omit<ContaPagar, 'id'>, fim: string, serie: string, primeiroId?: string): ContaPagar[] {
+  return vencimentosMensais(base.vencimento, fim).map((vencimento, i, datas) => ({
+    ...base, id: i === 0 && primeiroId ? primeiroId : `cp_${serie}_${vencimento.slice(0, 7)}`,
+    vencimento, pago: i === 0 ? base.pago : false, pagoEm: i === 0 ? base.pagoEm : '',
+    recorrenciaId: serie, recorrenciaFim: fim, parcela: i + 1, totalParcelas: datas.length,
+  }))
 }
 export function statusConta(conta: Pick<ContaPagar, 'pago' | 'vencimento'>, hoje = todayStr()): 'pago' | 'hoje' | 'atrasado' | 'aberto' {
   if (conta.pago) return 'pago'

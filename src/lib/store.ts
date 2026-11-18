@@ -85,6 +85,14 @@ async function gravar(col: Colecao, id: string, dados: Record<string, unknown>) 
 }
 
 export const db = {
+  async salvarLote(col: Colecao, registros: { id: string; dados: Record<string, unknown> }[]) {
+    if (!registros.length) return
+    // One request/transaction: a recurring bill must never be saved only in part.
+    const rows = registros.map(({ id, dados }) => ({ colecao: col, id, dados, atualizado: new Date().toISOString() }))
+    const { error } = await supabase!.from(TABELA).upsert(rows, { onConflict: 'colecao,id' })
+    if (error) throw error
+    for (const { id, dados } of registros) cache[col][id] = dados
+  },
   criar: (col: Colecao, dados: Record<string, unknown>) => gravar(col, novoId(), dados),
   salvar: (col: Colecao, id: string, dados: Record<string, unknown>) => gravar(col, id, dados),
   atualizar: (col: Colecao, id: string, parcial: Record<string, unknown>) => gravar(col, id, { ...(cache[col][id] || {}), ...parcial }),

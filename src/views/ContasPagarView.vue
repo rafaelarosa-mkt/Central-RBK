@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import Field from '@/components/app/Field.vue'
 import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
-import { brl, fmtBR, fmtMes, statusConta, todayStr, validarConta, type ContaPagar } from '@/lib/domain'
+import { brl, fmtBR, fmtMes, statusConta, todayStr, validarConta, vencimentosMensais, gerarContasMensais, type ContaPagar } from '@/lib/domain'
 import { contasPagar, db, mesAtual } from '@/lib/store'
 import { salvar } from '@/lib/ui'
 
@@ -22,6 +22,14 @@ const aberto = ref(false)
 const atual = ref<ContaPagar | null>(null)
 const erro = ref('')
 const excluir = ref<ContaPagar | null>(null)
+const repetir = ref(false)
+const ultimoMes = ref('')
+const serieId = ref('')
+const previsao = computed(() => {
+  if (!repetir.value) return ''
+  try { const datas = vencimentosMensais(f.vencimento, ultimoMes.value); return `${datas.length} contas de ${brl(f.valor)}, de ${fmtBR(datas[0])} até ${fmtBR(datas[datas.length - 1])}.` }
+  catch { return 'Escolha o primeiro vencimento e o último mês (até 120 meses).' }
+})
 const f = reactive({ descricao: '', fornecedor: '', categoria: '', valor: '' as string | number, vencimento: '', pago: false, pagoEm: '', observacoes: '' })
 const periodo = computed(() => contasPagar.value.filter(c => todosMeses.value || c.vencimento.startsWith(mesAtual.value)))
 const ativas = computed(() => periodo.value.filter(c => !c.excluida))
@@ -38,6 +46,9 @@ const linhas = computed(() => periodo.value
   .sort((a, b) => Number(a.pago) - Number(b.pago) || a.vencimento.localeCompare(b.vencimento) || a.descricao.localeCompare(b.descricao, 'pt-BR')))
 
 function editar(c?: ContaPagar) {
+  repetir.value = false
+  ultimoMes.value = c?.recorrenciaFim || c?.vencimento.slice(0, 7) || mesAtual.value
+  serieId.value = crypto.randomUUID()
   atual.value = c ? { ...c } : null
   Object.assign(f, { descricao: c?.descricao ?? '', fornecedor: c?.fornecedor ?? '', categoria: c?.categoria ?? '', valor: c?.valor ?? '', vencimento: c?.vencimento ?? (mesAtual.value === todayStr().slice(0, 7) ? todayStr() : `${mesAtual.value}-01`), pago: c?.pago ?? false, pagoEm: c?.pagoEm || todayStr(), observacoes: c?.observacoes ?? '' })
   erro.value = ''
@@ -48,8 +59,15 @@ async function enviar() {
   const dados = { ...f, descricao: f.descricao.trim(), fornecedor: f.fornecedor.trim(), categoria: f.categoria.trim(), observacoes: f.observacoes.trim(), valor: Math.round(Number(f.valor) * 100) / 100, pagoEm: f.pago ? f.pagoEm : '', tipoRegistro: 'conta_pagar' as const, atualizado: Date.now() }
   erro.value = validarConta(dados)
   if (erro.value) return
+  let geradas: ContaPagar[] = []
+  if (repetir.value && !atual.value?.recorrenciaId) {
+    try { geradas = gerarContasMensais(dados, ultimoMes.value, serieId.value, atual.value?.id) }
+    catch (e) { erro.value = e instanceof Error ? e.message : 'Período inválido.'; return }
+  }
   ocupado.value = true
-  const ok = await salvar(() => atual.value ? db.atualizar('pagamentos', atual.value.id, dados) : db.criar('pagamentos', dados), 'Conta salva')
+  const ok = await salvar(() => geradas.length
+    ? db.salvarLote('pagamentos', geradas.map(({ id, ...campos }) => ({ id, dados: campos })))
+    : atual.value ? db.atualizar('pagamentos', atual.value.id, dados) : db.criar('pagamentos', dados), geradas.length ? `${geradas.length} contas mensais salvas` : 'Conta salva')
   ocupado.value = false
   if (ok) {
     mesAtual.value = dados.vencimento.slice(0, 7)
@@ -97,6 +115,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
             <p class="font-semibold break-words">{{ c.descricao }}</p>
             <p v-if="c.fornecedor || c.categoria" class="text-muted-foreground text-xs break-words">{{ [c.fornecedor, c.categoria].filter(Boolean).join(' · ') }}</p>
             <p class="text-muted-foreground text-xs">Vence em {{ fmtBR(c.vencimento) }}<template v-if="c.pago"> · pago em {{ fmtBR(c.pagoEm) }}</template></p>
+            <p v-if="c.recorrenciaFim" class="text-muted-foreground text-xs">Mensal · {{ c.parcela }}/{{ c.totalParcelas }} · até {{ fmtMes(c.recorrenciaFim) }}</p>
           </div>
           <span v-if="c.excluida" class="text-muted-foreground text-sm">Excluída</span><PagBadge v-else :status="statusConta(c)" />
           <span class="min-w-24 text-right font-bold tabular">{{ brl(c.valor) }}</span>
@@ -120,8 +139,14 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
           <Field label="Fornecedor / beneficiário" for="cpFornecedor"><Input id="cpFornecedor" v-model="f.fornecedor" maxlength="150" :disabled="ocupado" /></Field>
           <Field label="Categoria" for="cpCategoria"><Input id="cpCategoria" v-model="f.categoria" maxlength="80" placeholder="Ex.: software, produção" :disabled="ocupado" /></Field>
           <Field label="Valor (R$)" for="cpValor"><Input id="cpValor" v-model="f.valor" type="number" min="0.01" step="0.01" required :disabled="ocupado" /></Field>
-          <Field label="Vencimento" for="cpVencimento"><Input id="cpVencimento" v-model="f.vencimento" type="date" required :disabled="ocupado" /></Field>
-          <label class="flex items-center gap-2 text-sm"><input v-model="f.pago" type="checkbox" class="accent-primary size-4" :disabled="ocupado">Conta já paga</label>
+          <Field :label="repetir ? 'Primeiro vencimento' : 'Vencimento'" for="cpVencimento"><Input id="cpVencimento" v-model="f.vencimento" type="date" required :disabled="ocupado" /></Field>
+          <template v-if="!atual?.recorrenciaId">
+            <label class="flex items-center gap-2 text-sm sm:col-span-2"><input v-model="repetir" type="checkbox" class="accent-primary size-4" :disabled="ocupado">Repetir todos os meses</label>
+            <Field v-if="repetir" label="Último mês (inclusive)" for="cpUltimoMes" class="sm:col-span-2"><Input id="cpUltimoMes" v-model="ultimoMes" type="month" :min="f.vencimento.slice(0, 7)" required :disabled="ocupado" /></Field>
+            <p v-if="repetir" class="text-muted-foreground text-xs sm:col-span-2">{{ previsao }} O valor é mensal. Em meses mais curtos, o vencimento cai no último dia. Cada mês terá seu próprio pagamento.</p>
+          </template>
+          <p v-else class="text-muted-foreground text-xs sm:col-span-2">Conta mensal {{ atual.parcela }}/{{ atual.totalParcelas }}, até {{ fmtMes(atual.recorrenciaFim!) }}. Esta edição altera somente esta conta.</p>
+          <label class="flex items-center gap-2 text-sm"><input v-model="f.pago" type="checkbox" class="accent-primary size-4" :disabled="ocupado">{{ repetir ? 'Primeira conta já paga' : 'Conta já paga' }}</label>
           <Field v-if="f.pago" label="Data do pagamento" for="cpPagamento"><Input id="cpPagamento" v-model="f.pagoEm" type="date" :max="todayStr()" required :disabled="ocupado" /></Field>
           <Field label="Observações" for="cpObs" class="sm:col-span-2"><Textarea id="cpObs" v-model="f.observacoes" maxlength="5000" :disabled="ocupado" /></Field>
           <p v-if="erro" role="alert" class="text-destructive text-sm sm:col-span-2">{{ erro }}</p>

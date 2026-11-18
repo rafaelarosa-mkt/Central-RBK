@@ -28,6 +28,8 @@ Use a seção **Contas a pagar** (no celular, **A pagar**) para cadastrar despes
 
 Os totais seguem o mês de vencimento e ignoram contas excluídas. Registrar pagamento não realiza transferência bancária. As despesas ficam na coleção financeira existente, com `tipoRegistro: conta_pagar`, separadas dos recebimentos dos clientes. Isso preserva as permissões, a sincronização e o backup já existentes, sem exigir migração de banco.
 
+Para contas recorrentes, marque **Repetir todos os meses** e informe o primeiro vencimento e o **Último mês (inclusive)**. A Central salva todos os meses de uma vez, até 120 meses, com pagamentos independentes. Dias 29, 30 ou 31 são ajustados ao último dia dos meses mais curtos, retomando o dia original nos demais. É possível converter uma conta avulsa já cadastrada sem duplicar o primeiro lançamento. A lista mostra a parcela e até quando a conta vai. Editar ou excluir uma parcela afeta somente aquele lançamento.
+
 Testes: `node --test tests/*.test.mjs`.
 
 ## Executar localmente
