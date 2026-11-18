@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { usePreferredDark } from '@vueuse/core'
 import { watchEffect } from 'vue'
-import { CalendarDays, Clapperboard, Download, LayoutDashboard, LogOut, MoreHorizontal, Upload, Users, Wallet } from 'lucide-vue-next'
+import { CalendarDays, Clapperboard, Download, LayoutDashboard, LogOut, MoreHorizontal, Upload, Users, Wallet, Receipt } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,7 @@ const NAV = [
   { to: '/producao', label: 'Produção', icon: Clapperboard },
   { to: '/agenda', label: 'Agenda', icon: CalendarDays },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet },
+  { to: '/contas-a-pagar', label: 'Contas a pagar', curto: 'A pagar', icon: Receipt },
   { to: '/clientes', label: 'Clientes', icon: Users },
 ]
 const ativo = (to: string) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
@@ -127,10 +128,10 @@ const sair = () => supabase?.auth.signOut({ scope: 'local' })
     </div>
 
     <!-- navegação inferior (celular) -->
-    <nav class="bg-card fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] md:hidden" aria-label="Seções">
+    <nav class="bg-card fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t px-1 pt-1.5 pb-[calc(0.375rem+env(safe-area-inset-bottom))] md:hidden" aria-label="Seções">
       <RouterLink v-for="n in NAV" :key="n.to" :to="n.to"
         :class="['flex flex-col items-center gap-1 rounded-lg py-1.5 text-[11px] font-semibold', ativo(n.to) ? 'text-primary' : 'text-muted-foreground']">
-        <component :is="n.icon" class="size-[22px]" />{{ n.label }}
+        <component :is="n.icon" class="size-[22px]" />{{ n.curto || n.label }}
       </RouterLink>
     </nav>
 

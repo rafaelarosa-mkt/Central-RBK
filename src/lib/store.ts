@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import type { Session } from '@supabase/supabase-js'
 import { supabase, configurado } from './supabase'
-import type { Cliente, Evento, Item, Pagamento } from './domain'
+import type { Cliente, ContaPagar, Evento, Item, Pagamento } from './domain'
 import { ymNow } from './domain'
 
 const TABELA = 'RBK DADOS'
@@ -26,7 +26,13 @@ const lista = <T>(col: Colecao) => computed(() =>
 export const clientes = lista<Cliente>('clients')
 export const itens = lista<Item>('itens')
 export const agenda = lista<Evento>('agenda')
-export const pagamentos = computed(() => cache.pagamentos as unknown as Record<string, Pagamento>)
+// Payables share the existing financial collection with an explicit discriminator.
+// Keep them out of client receipts while retaining backup, RLS and realtime support.
+export const pagamentos = computed(() => Object.fromEntries(Object.entries(cache.pagamentos)
+  .filter(([, d]) => d.tipoRegistro !== 'conta_pagar')) as unknown as Record<string, Pagamento>)
+export const contasPagar = computed(() => Object.entries(cache.pagamentos)
+  .filter(([, d]) => d.tipoRegistro === 'conta_pagar')
+  .map(([id, d]) => ({ ...d, id }) as unknown as ContaPagar))
 export const ativos = computed(() =>
   clientes.value.filter(c => c.ativo !== false).sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR')))
 export const clientesPorId = computed(() => Object.fromEntries(clientes.value.map(c => [c.id, c])) as Record<string, Cliente>)

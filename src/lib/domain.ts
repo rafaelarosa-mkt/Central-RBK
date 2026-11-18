@@ -40,6 +40,31 @@ export interface Item {
   [k: string]: unknown
 }
 export interface Pagamento { clientId: string; mes: string; pago: boolean; pagoEm?: string; valor?: number; valorPermuta?: number; naoCobrar?: boolean; motivo?: string }
+export interface ContaPagar {
+  id: string
+  tipoRegistro: 'conta_pagar'
+  descricao: string
+  fornecedor: string
+  categoria: string
+  valor: number
+  vencimento: string
+  pago: boolean
+  pagoEm: string
+  observacoes: string
+  excluida?: boolean
+}
+export function statusConta(conta: Pick<ContaPagar, 'pago' | 'vencimento'>, hoje = todayStr()): 'pago' | 'hoje' | 'atrasado' | 'aberto' {
+  if (conta.pago) return 'pago'
+  return conta.vencimento < hoje ? 'atrasado' : conta.vencimento === hoje ? 'hoje' : 'aberto'
+}
+export function validarConta(conta: Pick<ContaPagar, 'descricao' | 'valor' | 'vencimento' | 'pago' | 'pagoEm'>) {
+  const dataValida = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && Number.isFinite(Date.parse(d)) && new Date(d).toISOString().slice(0, 10) === d
+  if (!conta.descricao.trim()) return 'Informe a descrição da conta.'
+  if (!Number.isFinite(conta.valor) || conta.valor <= 0) return 'Informe um valor maior que zero.'
+  if (!dataValida(conta.vencimento)) return 'Informe uma data de vencimento válida.'
+  if (conta.pago && (!dataValida(conta.pagoEm) || conta.pagoEm > todayStr())) return 'Informe a data do pagamento, até hoje.'
+  return ''
+}
 export interface Evento {
   id: string
   tipo: 'gravacao' | 'reuniao' | 'entrega' | 'outro'

@@ -22,6 +22,14 @@ A permuta aparece separadamente como prevista, sem aumentar o dinheiro recebido,
 
 Validação das regras: `node --test tests/financeiro.test.mjs` (Node 24 ou superior).
 
+## Contas a pagar
+
+Use a seção **Contas a pagar** (no celular, **A pagar**) para cadastrar despesas com descrição, fornecedor, categoria, valor, vencimento e observações. É possível registrar pagamento na data escolhida, marcar como paga hoje, desfazer pagamento, editar e excluir com opção de restaurar. O filtro **Todos os meses** permite localizar atrasos de períodos anteriores.
+
+Os totais seguem o mês de vencimento e ignoram contas excluídas. Registrar pagamento não realiza transferência bancária. As despesas ficam na coleção financeira existente, com `tipoRegistro: conta_pagar`, separadas dos recebimentos dos clientes. Isso preserva as permissões, a sincronização e o backup já existentes, sem exigir migração de banco.
+
+Testes: `node --test tests/*.test.mjs`.
+
 ## Executar localmente
 
 ```bash

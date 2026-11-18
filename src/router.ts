@@ -7,6 +7,7 @@ export const router = createRouter({
     { path: '/producao', name: 'producao', component: () => import('./views/ProducaoView.vue'), meta: { titulo: 'Produção' } },
     { path: '/agenda', name: 'agenda', component: () => import('./views/AgendaView.vue'), meta: { titulo: 'Agenda' } },
     { path: '/financeiro', name: 'financeiro', component: () => import('./views/FinanceiroView.vue'), meta: { titulo: 'Financeiro' } },
+    { path: '/contas-a-pagar', name: 'contas-pagar', component: () => import('./views/ContasPagarView.vue'), meta: { titulo: 'Contas a pagar' } },
     { path: '/clientes', name: 'clientes', component: () => import('./views/ClientesView.vue'), meta: { titulo: 'Clientes' } },
     { path: '/:p(.*)*', redirect: '/' },
   ],
