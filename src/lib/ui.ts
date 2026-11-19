@@ -5,6 +5,7 @@ import type { Cliente, Evento, Item } from './domain'
 type Modal =
   | { tipo: ''; }
   | { tipo: 'cliente'; cliente?: Cliente }
+  | { tipo: 'briefing'; cliente: Cliente }
   | { tipo: 'item'; item?: Item; clientId?: string }
   | { tipo: 'evento'; evento?: Evento; data?: string }
   | { tipo: 'cobranca'; cliente: Cliente; mes: string }

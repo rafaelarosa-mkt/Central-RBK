@@ -6,6 +6,12 @@ Gestão de clientes, produção, agenda e financeiro da RBK Mídias com Vue 3, V
 
 O conector privado de demandas está em `integrations/chatgpt/`. Consulte o README dessa pasta para configuração e publicação independente em Sites. O código foi preparado para consultar clientes e criar conteúdos de produção; é necessário publicar o plugin e configurar sua credencial privada antes de usá-lo. O deploy da Vercel não ativa essa integração sozinho.
 
+## Briefing dos clientes
+
+Em **Clientes → Briefing**, registre marca, produtos, diferenciais, objetivos, público, dores, concorrentes, cores (com códigos HEX), fontes, estilo visual, links de materiais, tom de voz, pilares, referências, restrições, chamadas para ação, produção e aprovação. Todos os campos são opcionais para permitir preenchimento gradual.
+
+Use **Consultar briefing** no cartão do cliente para ler ou copiar. Ao criar/editar um conteúdo, o briefing atualizado do cliente selecionado aparece automaticamente acima dos campos de produção. Trocar o cliente troca a referência sem alterar o roteiro. O briefing fica no registro do cliente no Supabase, acompanha o backup e não altera os dados financeiros nem a cor usada para identificação na agenda.
+
 ## Supabase
 
 1. Em um projeto novo, execute a migração em `supabase/migrations/` pelo SQL Editor. Ela prepara a tabela `RBK DADOS` e o bucket privado `anexos`.

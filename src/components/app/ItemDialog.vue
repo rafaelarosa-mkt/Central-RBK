@@ -8,14 +8,16 @@ import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
 import Field from './Field.vue'
+import BriefingResumo from './BriefingResumo.vue'
 import { LBL, STATUS, type Anexo, type Item, type Status, type Tipo } from '@/lib/domain'
-import { arquivos, ativos, db, mesAtual } from '@/lib/store'
+import { arquivos, ativos, clientesPorId, db, mesAtual } from '@/lib/store'
 import { fechar, modal, salvar } from '@/lib/ui'
 
 const aberto = computed(() => modal.atual.tipo === 'item')
 const atual = computed(() => (modal.atual.tipo === 'item' ? modal.atual.item : undefined))
 const novo = computed(() => !atual.value)
 const f = reactive({ clientId: '', tipo: 'video' as Tipo, mes: '', titulo: '', status: 'roteiro' as Status, dataGravacao: '', dataPost: '', roteiro: '', qtd: 1 })
+const clienteBriefing = computed(() => clientesPorId.value[f.clientId])
 const anexos = ref<Anexo[]>([])
 const enviando = ref(false)
 const confirmarExcluir = ref(false)
@@ -81,6 +83,10 @@ const rotuloEtapa = (s: Status) => (LBL.video[s] === LBL.post[s] ? LBL.video[s] 
             <option v-for="c in ativos" :key="c.id" :value="c.id">{{ c.nome }}</option>
           </NativeSelect>
         </Field>
+        <details v-if="clienteBriefing" :key="clienteBriefing.id" open class="bg-secondary/40 rounded-lg border p-3 sm:col-span-2">
+          <summary class="cursor-pointer text-sm font-bold">Briefing de {{ clienteBriefing.nome }}</summary>
+          <div class="mt-3 max-h-72 overflow-y-auto pr-2"><BriefingResumo :cliente="clienteBriefing" /></div>
+        </details>
         <fieldset class="flex flex-col gap-2">
           <legend class="text-muted-foreground mb-2 text-sm font-medium">Tipo</legend>
           <div class="bg-secondary grid grid-cols-2 gap-1 rounded-lg p-1">

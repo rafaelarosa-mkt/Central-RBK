@@ -1,4 +1,5 @@
 // Regras do negócio da Central RBK: datas, pagamentos, produção e contratos.
+import type { BriefingCliente } from './briefing'
 
 export type Status = 'roteiro' | 'gravado' | 'editado' | 'programado' | 'publicado'
 export type Tipo = 'video' | 'post'
@@ -8,6 +9,8 @@ export type CtStatus = 'futuro' | 'vigente' | 'renovar' | 'encerrado'
 export interface Cliente {
   id: string
   nome: string
+  briefing?: BriefingCliente
+  briefingAtualizado?: string
   contato?: string
   telefone?: string
   instagram?: string

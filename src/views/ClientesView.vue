@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Progress } from '@/components/ui/progress'
 import ClientDot from '@/components/app/ClientDot.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
+import BriefingResumo from '@/components/app/BriefingResumo.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
 import { brl, contrato, ctLabel, fmtBR, waNum, type CtStatus } from '@/lib/domain'
 import { ativos, clientes } from '@/lib/store'
@@ -79,10 +80,12 @@ const barra = (st: CtStatus) => (st === 'renovar' ? 'bg-warning' : st === 'encer
             </dl>
           </CardContent>
           <CardFooter class="mt-auto flex-wrap gap-1.5">
+            <Button variant="outline" size="sm" @click="abrir({ tipo: 'briefing', cliente: c })">Briefing</Button>
             <Button variant="outline" size="sm" @click="abrir({ tipo: 'cliente', cliente: c })"><Pencil />Editar</Button>
             <Button variant="ghost" size="sm" @click="router.push({ path: '/producao', query: { cliente: c.id } })"><Clapperboard />Produção</Button>
             <Button v-if="waNum(c.telefone)" variant="ghost" size="sm" as="a" :href="`https://wa.me/${waNum(c.telefone)}`" target="_blank" rel="noopener"><MessageCircle />WhatsApp</Button>
           </CardFooter>
+          <CardContent><details><summary class="cursor-pointer text-sm font-semibold">Consultar briefing</summary><div class="mt-3"><BriefingResumo :cliente="c" /></div></details></CardContent>
         </Card>
       </div>
     </template>

@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import MesSwitcher from '@/components/app/MesSwitcher.vue'
 import ClienteDialog from '@/components/app/ClienteDialog.vue'
+import BriefingDialog from '@/components/app/BriefingDialog.vue'
 import ItemDialog from '@/components/app/ItemDialog.vue'
 import EventoDialog from '@/components/app/EventoDialog.vue'
 import CobrancaDialog from '@/components/app/CobrancaDialog.vue'
@@ -137,6 +138,7 @@ const sair = () => supabase?.auth.signOut({ scope: 'local' })
 
     <input ref="inputRestore" type="file" accept=".json,application/json" class="hidden" @change="restaurar">
     <ClienteDialog />
+    <BriefingDialog />
     <ItemDialog />
     <EventoDialog />
     <CobrancaDialog />
