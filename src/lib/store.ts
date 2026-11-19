@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase, configurado } from './supabase'
 import type { Cliente, ContaPagar, Evento, Item, Pagamento } from './domain'
 import { ymNow } from './domain'
+import { separarProducao } from './extras'
 
 const TABELA = 'RBK DADOS'
 
@@ -24,7 +25,9 @@ const lista = <T>(col: Colecao) => computed(() =>
   Object.entries(cache[col]).map(([id, d]) => ({ id, ...d }) as T))
 
 export const clientes = lista<Cliente>('clients')
-export const itens = lista<Item>('itens')
+const registrosProducao = lista<Item>('itens')
+export const itens = computed(() => separarProducao(registrosProducao.value).plano)
+export const demandasExtras = computed(() => separarProducao(registrosProducao.value).extras)
 export const agenda = lista<Evento>('agenda')
 // Payables share the existing financial collection with an explicit discriminator.
 // Keep them out of client receipts while retaining backup, RLS and realtime support.

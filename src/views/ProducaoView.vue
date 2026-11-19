@@ -9,11 +9,14 @@ import { NativeSelect } from '@/components/ui/native-select'
 import ClientDot from '@/components/app/ClientDot.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
+import DemandasExtras from '@/components/app/DemandasExtras.vue'
 import { COLSUB, LBL, STATUS, fmtD, fmtMes, pad, prog, type Item, type Status } from '@/lib/domain'
 import { ativos, clientesPorId, db, itens, mesAtual } from '@/lib/store'
 import { abrir, salvar } from '@/lib/ui'
 
 const route = useRoute(); const router = useRouter()
+const extras = computed(() => route.query.area === 'extras')
+const selecionarArea = (extra: boolean) => router.replace({ query: { ...route.query, area: extra ? 'extras' : undefined } })
 const fCli = computed({
   get: () => (route.query.cliente as string) || '',
   set: v => router.replace({ query: { ...route.query, cliente: v || undefined } }),
@@ -41,11 +44,16 @@ function mover(i: Item, d: number) {
 
 <template>
   <div class="flex flex-col gap-5">
-    <PageHeader titulo="Produção" :sub="`Conteúdos de ${fmtMes(mesAtual)}, do roteiro à publicação.`">
-      <Button @click="abrir({ tipo: 'item', clientId: fCli || undefined })"><Plus />Novo conteúdo</Button>
+    <PageHeader titulo="Produção" :sub="extras ? 'Organize pedidos especiais e entregas fora do contrato.' : `Conteúdos de ${fmtMes(mesAtual)}, do roteiro à publicação.`">
+      <Button v-if="!extras" @click="abrir({ tipo: 'item', clientId: fCli || undefined })"><Plus />Novo conteúdo</Button>
     </PageHeader>
 
-    <EmptyClientes v-if="!ativos.length" />
+    <nav class="bg-secondary flex w-fit gap-1 rounded-xl p-1" aria-label="Área de produção">
+      <Button :variant="extras ? 'ghost' : 'default'" :aria-pressed="!extras" @click="selecionarArea(false)">Conteúdos do plano</Button>
+      <Button :variant="extras ? 'default' : 'ghost'" :aria-pressed="extras" @click="selecionarArea(true)">Demandas extras</Button>
+    </nav>
+    <DemandasExtras v-if="extras" />
+    <EmptyClientes v-else-if="!ativos.length" />
     <template v-else>
       <div class="flex flex-wrap gap-2">
         <NativeSelect v-model="fCli" class="w-full sm:w-64" aria-label="Filtrar cliente">
