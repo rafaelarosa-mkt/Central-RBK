@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { CalendarPlus, ChevronRight, MessageCircle, Check } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
@@ -16,10 +16,15 @@ import {
 } from '@/lib/domain'
 import { agenda, ativos, clientesPorId, db, itens, mesAtual, pagamentos } from '@/lib/store'
 import { abrir, salvar } from '@/lib/ui'
+import { useGoogleCalendar } from '@/lib/google-calendar'
 
 const router = useRouter()
 const hoje = todayStr()
 const cur = ymNow()
+const { events: eventosGoogle, connected: googleConectado, checking: verificandoGoogle, busy: atualizandoGoogle, error: erroGoogle, syncedAt, sync } = useGoogleCalendar(ref(hoje.slice(0, 7)))
+const compromissosHoje = computed(() => [...agenda.value, ...eventosGoogle.value]
+  .filter(e => e.data === hoje)
+  .sort((a, b) => (a.hora || '00:00').localeCompare(b.hora || '00:00')))
 
 const linhas = computed(() => ativos.value.map(c => ({
   c, p: prog(c, mesAtual.value, itens.value), st: pagStatus(c, mesAtual.value, pagamentos.value),
@@ -59,7 +64,6 @@ const alertas = computed(() => {
   return out.sort((a, b) => ord[a.tipo] - ord[b.tipo] || a.venc.localeCompare(b.venc))
 })
 
-const evHoje = computed(() => agenda.value.filter(e => e.data === hoje).sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99')))
 const evProx = computed(() => agenda.value.filter(e => e.data > hoje && e.data <= addDias(hoje, 7))
   .sort((a, b) => (a.data + (a.hora || '')).localeCompare(b.data + (b.hora || ''))).slice(0, 6))
 
@@ -78,6 +82,35 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
       <Button variant="outline" @click="abrir({ tipo: 'evento', data: hoje })"><CalendarPlus />Agendar</Button>
       <Button @click="abrir({ tipo: 'item' })">Novo conteúdo</Button>
     </PageHeader>
+
+    <Card class="gap-4">
+      <CardHeader>
+        <CardTitle>Compromissos de hoje</CardTitle>
+        <CardDescription>Agenda da Central e Google Agenda · {{ fmtLongo(hoje) }}</CardDescription>
+        <CardAction><Button variant="ghost" size="sm" @click="router.push('/agenda')">Calendário<ChevronRight /></Button></CardAction>
+      </CardHeader>
+      <CardContent class="flex flex-col gap-3">
+        <p v-if="verificandoGoogle" class="text-muted-foreground text-xs" role="status">Carregando compromissos do Google…</p>
+        <div v-else-if="googleConectado" class="flex flex-wrap items-center justify-between gap-2">
+          <p class="text-muted-foreground text-xs">Google atualiza a cada minuto.<span v-if="syncedAt"> Última atualização: {{ syncedAt }}.</span></p>
+          <Button variant="outline" size="sm" :disabled="atualizandoGoogle" @click="sync">{{ atualizandoGoogle ? 'Atualizando…' : 'Atualizar agora' }}</Button>
+        </div>
+        <Button v-else variant="outline" size="sm" class="self-start" @click="router.push('/agenda')">Conectar Google Agenda</Button>
+        <p v-if="erroGoogle" role="alert" class="text-destructive text-sm">{{ erroGoogle }}</p>
+        <p v-if="!compromissosHoje.length && !verificandoGoogle && !atualizandoGoogle" class="text-muted-foreground text-sm">{{ googleConectado && !erroGoogle ? 'Nenhum compromisso para hoje.' : 'Nenhum compromisso da Central para hoje.' }}</p>
+        <div v-for="e in compromissosHoje" :key="e.id" class="flex items-center gap-3 rounded-lg bg-secondary/50 px-3 py-3">
+          <span class="w-14 shrink-0 text-xs font-bold tabular">{{ e.hora || 'Dia todo' }}</span>
+          <span v-if="e.origem === 'google'" class="size-2.5 shrink-0 rounded-full bg-[#4285F4]" />
+          <ClientDot v-else :cliente="clientesPorId[e.clientId || '']" />
+          <div class="min-w-0 flex-1">
+            <p :class="['text-sm font-semibold break-words', e.feito && 'text-muted-foreground line-through']">{{ e.titulo || TIPOS_EV[e.tipo] }}</p>
+            <p class="text-muted-foreground text-xs">{{ e.origem === 'google' ? 'Google Agenda' : 'Central' }}<span v-if="e.local"> · {{ e.local }}</span></p>
+            <a v-if="e.origem === 'google' && e.googleUrl" :href="String(e.googleUrl)" target="_blank" rel="noopener noreferrer" class="text-primary text-xs underline">Abrir no Google</a>
+            <button v-else-if="e.origem !== 'google'" type="button" class="text-primary text-xs underline" @click="abrir({ tipo: 'evento', evento: e })">Ver compromisso</button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
 
     <EmptyClientes v-if="!ativos.length" />
     <template v-else>
@@ -155,11 +188,11 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
 
         <!-- agenda -->
         <Card class="gap-4">
-          <CardHeader><CardTitle>Agenda</CardTitle><CardDescription>Hoje e próximos 7 dias</CardDescription>
+          <CardHeader><CardTitle>Próximos compromissos da Central</CardTitle><CardDescription>Próximos 7 dias · consulte também os eventos do Google no calendário</CardDescription>
             <CardAction><Button variant="ghost" size="sm" @click="router.push('/agenda')">Calendário<ChevronRight /></Button></CardAction></CardHeader>
           <CardContent class="flex flex-col gap-2">
-            <p v-if="!evHoje.length" class="text-muted-foreground text-sm">Nada agendado para hoje.</p>
-            <button v-for="e in [...evHoje, ...evProx]" :key="e.id" type="button"
+            <p v-if="!evProx.length" class="text-muted-foreground text-sm">Nada agendado na Central nos próximos 7 dias.</p>
+            <button v-for="e in evProx" :key="e.id" type="button"
               class="hover:bg-secondary flex items-center gap-3 rounded-lg px-2 py-2 text-left" @click="abrir({ tipo: 'evento', evento: e })">
               <span class="text-muted-foreground w-12 shrink-0 text-xs font-bold tabular">{{ e.data === hoje ? (e.hora || 'hoje') : fmtD(e.data) }}</span>
               <ClientDot :cliente="clientesPorId[e.clientId || '']" />
