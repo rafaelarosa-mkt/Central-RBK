@@ -23,3 +23,12 @@ test('visitas não contam como conteúdo contratado nem demanda extra', () => {
   assert.deepEqual(plano.map(i => i.id), ['i'])
   assert.deepEqual(extras.map(i => i.id), ['e'])
 })
+
+test('meta mensal conta realizadas e não gera saldo negativo ao superar o previsto', async () => {
+  const { progressoVisitas } = await import('../src/lib/visitas.ts')
+  assert.equal(progressoVisitas(undefined, 1), null)
+  assert.deepEqual(progressoVisitas(2, 1), { previstas: 2, realizadas: 1, faltam: 1, completo: false, percentual: 50 })
+  assert.equal(progressoVisitas(2, 2).completo, true)
+  assert.equal(progressoVisitas(2, 3).faltam, 0)
+  assert.equal(progressoVisitas(2, 3).percentual, 100)
+})

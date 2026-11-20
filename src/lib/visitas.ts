@@ -14,3 +14,8 @@ export function remarcarVisita(v: Visita, data: string, hora: string, motivo: st
   if (!motivo.trim() || !solicitadoPor.trim()) throw new Error('Informe o motivo e quem solicitou a remarcação.')
   return { ...v, data, hora, historico: [...(v.historico || []), { de: v.data, horaAnterior: v.hora, para: data, horaNova: hora, motivo: motivo.trim(), solicitadoPor: solicitadoPor.trim(), registradoEm: agora }] }
 }
+
+export function progressoVisitas(previstas: number | null | undefined, realizadas: number) {
+  if (previstas == null || !Number.isInteger(previstas) || previstas < 0) return null
+  return { previstas, realizadas, faltam: Math.max(0, previstas - realizadas), completo: realizadas >= previstas, percentual: previstas > 0 ? Math.min(100, realizadas / previstas * 100) : 100 }
+}

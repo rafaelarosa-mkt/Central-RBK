@@ -17,6 +17,7 @@ export interface Cliente {
   plano?: string
   videosMes?: number
   postsMes?: number
+  visitasMes?: number | null
   valor?: number
   valorPermuta?: number
   diaPgto?: number | null

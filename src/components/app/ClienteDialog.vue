@@ -12,7 +12,7 @@ import { fechar, modal, salvar } from '@/lib/ui'
 const aberto = computed(() => modal.atual.tipo === 'cliente')
 const atual = computed(() => (modal.atual.tipo === 'cliente' ? modal.atual.cliente : undefined))
 const f = reactive({
-  nome: '', contato: '', telefone: '', instagram: '', plano: '', videosMes: 0, postsMes: 0, valor: '' as string | number, valorPermuta: '' as string | number,
+  nome: '', contato: '', telefone: '', instagram: '', plano: '', videosMes: 0, postsMes: 0, visitasMes: '' as string | number, valor: '' as string | number, valorPermuta: '' as string | number,
   diaPgto: '' as string | number, obsPgto: '', obs: '', cor: CORES[0], ativo: true, inicioContrato: '', mesesContrato: '' as string | number,
 })
 watch(aberto, a => {
@@ -20,7 +20,7 @@ watch(aberto, a => {
   const c = atual.value
   Object.assign(f, {
     nome: c?.nome || '', contato: c?.contato || '', telefone: c?.telefone || '', instagram: c?.instagram || '', plano: c?.plano || '',
-    videosMes: Number(c?.videosMes) || 0, postsMes: Number(c?.postsMes) || 0, valor: c?.valor ?? '', valorPermuta: c?.valorPermuta ?? '', diaPgto: c?.diaPgto ?? '',
+    visitasMes: c?.visitasMes ?? '', videosMes: Number(c?.videosMes) || 0, postsMes: Number(c?.postsMes) || 0, valor: c?.valor ?? '', valorPermuta: c?.valorPermuta ?? '', diaPgto: c?.diaPgto ?? '',
     obsPgto: c?.obsPgto || '', obs: c?.obs || '', cor: c?.cor || CORES[clientes.value.length % 8], ativo: c?.ativo !== false,
     inicioContrato: c?.inicioContrato || '', mesesContrato: c?.mesesContrato ?? '',
   })
@@ -31,9 +31,10 @@ const fim = computed(() => {
 })
 async function enviar() {
   if (!f.nome.trim()) return
+  if (f.visitasMes !== '' && (!Number.isInteger(Number(f.visitasMes)) || Number(f.visitasMes) < 0)) return
   if (![f.valor, f.valorPermuta].every(v => Number.isFinite(Number(v)) && Number(v) >= 0)) return
   const d = {
-    ...f, nome: f.nome.trim(), videosMes: Number(f.videosMes) || 0, postsMes: Number(f.postsMes) || 0, valor: Number(f.valor) || 0,
+    ...f, nome: f.nome.trim(), visitasMes: f.visitasMes === '' ? null : Number(f.visitasMes), videosMes: Number(f.videosMes) || 0, postsMes: Number(f.postsMes) || 0, valor: Number(f.valor) || 0,
     valorPermuta: Number(f.valorPermuta) || 0, diaPgto: Number(f.diaPgto) || null, mesesContrato: Number(f.mesesContrato) || null,
   }
   const c = atual.value
@@ -58,6 +59,7 @@ async function enviar() {
         <Field label="Instagram" for="cInsta"><Input id="cInsta" v-model="f.instagram" placeholder="@perfil" /></Field>
         <Field label="Plano" for="cPlano"><Input id="cPlano" v-model="f.plano" placeholder="Ex.: Bronze" /></Field>
         <Field label="Vídeos por mês" for="cVid"><Input id="cVid" v-model="f.videosMes" type="number" min="0" /></Field>
+        <Field label="Visitas previstas por mês" for="cVisitas" hint="Ex.: 1 ou 2 visitas. Deixe vazio se ainda não foi definido."><Input id="cVisitas" v-model="f.visitasMes" type="number" min="0" step="1" placeholder="Ex.: 2" /></Field>
         <Field label="Posts por mês" for="cPost"><Input id="cPost" v-model="f.postsMes" type="number" min="0" /></Field>
         <Field label="A receber em dinheiro / mês (R$)" for="cVal"><Input id="cVal" v-model="f.valor" type="number" min="0" step="0.01" /></Field>
         <Field label="Permuta / mês (R$)" for="cPermuta"><Input id="cPermuta" v-model="f.valorPermuta" type="number" min="0" step="0.01" /></Field>

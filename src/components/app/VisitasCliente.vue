@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { CalendarDays, Plus, RotateCcw } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -11,13 +12,14 @@ import Field from './Field.vue'
 import { db, visitas, mesAtual } from '@/lib/store'
 import { salvar } from '@/lib/ui'
 import { fmtBR, fmtMes, todayStr, type Cliente } from '@/lib/domain'
-import { remarcarVisita, validarAgendamento, type Visita } from '@/lib/visitas'
+import { remarcarVisita, validarAgendamento, progressoVisitas, type Visita } from '@/lib/visitas'
 const props = defineProps<{ cliente: Cliente }>()
 const aberto = ref(false), mes = ref(mesAtual.value), busy = ref(false), erro = ref(''), modo = ref(''), alvo = ref('')
 const f = reactive({ data: '', hora: '', local: '', observacoes: '', motivo: '', solicitadoPor: 'Cliente' })
 const lista = computed(() => visitas.value.filter(v => v.clientId === props.cliente.id && v.mes === mes.value).sort((a, b) => (a.data + a.hora).localeCompare(b.data + b.hora)))
 const resumo = computed(() => ({ total: lista.value.length, realizadas: lista.value.filter(v => v.status === 'realizada').length, agendadas: lista.value.filter(v => v.status === 'agendada').length, canceladas: lista.value.filter(v => v.status === 'cancelada').length, remarcacoes: lista.value.reduce((n, v) => n + (v.historico || []).length, 0) }))
 const status = { agendada: 'Agendada', realizada: 'Realizada', cancelada: 'Cancelada' }
+const progresso = computed(() => progressoVisitas(props.cliente.visitasMes, resumo.value.realizadas))
 watch(mes, () => { modo.value = ''; erro.value = '' })
 function abrir() { mes.value = mesAtual.value; modo.value = ''; erro.value = ''; aberto.value = true }
 function formulario(v?: Visita) {
@@ -54,6 +56,12 @@ async function alterarStatus(v: Visita, novo: Visita['status']) {
     <DialogContent class="sm:max-w-3xl">
       <DialogHeader><DialogTitle>Visitas · {{ cliente.nome }}</DialogTitle><DialogDescription>Datas agendadas e histórico de remarcações de cada visita.</DialogDescription></DialogHeader>
       <div class="flex flex-wrap items-end justify-between gap-3"><Field label="Mês de acompanhamento" for="visita-mes"><Input id="visita-mes" v-model="mes" type="month" :disabled="busy" /></Field><Button :disabled="busy || !mes" @click="formulario()"><Plus />Agendar visita</Button></div>
+      <div v-if="progresso" class="rounded-xl border bg-primary/5 p-4">
+        <div class="mb-3 flex flex-wrap justify-between gap-2"><p class="font-bold">{{ progresso.realizadas }} de {{ progresso.previstas }} visitas realizadas</p><Badge :variant="progresso.completo ? 'success' : 'info'">{{ progresso.completo ? 'Meta cumprida' : `Faltam ${progresso.faltam} visitas` }}</Badge></div>
+        <Progress :model-value="progresso.percentual" :indicator-class="progresso.completo ? 'bg-success' : ''" />
+        <p class="mt-2 text-xs text-muted-foreground">Meta atual do cadastro aplicada ao mês selecionado. Apenas visitas marcadas como realizadas contam.</p>
+      </div>
+      <p v-else class="rounded-lg border p-3 text-sm text-muted-foreground">Defina as visitas previstas por mês em Clientes → Editar para acompanhar a meta.</p>
       <div class="grid grid-cols-2 gap-2 rounded-xl bg-primary/5 p-3 sm:grid-cols-5">
         <div v-for="r in [{ n: resumo.total, t: 'Visitas no mês' }, { n: resumo.agendadas, t: 'Agendadas' }, { n: resumo.realizadas, t: 'Realizadas' }, { n: resumo.canceladas, t: 'Canceladas' }, { n: resumo.remarcacoes, t: 'Remarcações' }]" :key="r.t" class="rounded-lg bg-card p-3"><p class="text-xl font-bold tabular">{{ r.n }}</p><p class="text-xs text-muted-foreground">{{ r.t }}</p></div>
       </div>
