@@ -27,8 +27,9 @@ const lista = <T>(col: Colecao) => computed(() =>
 
 export const clientes = lista<Cliente>('clients')
 const registrosProducao = lista<Item>('itens')
-export const itens = computed(() => separarProducao(registrosProducao.value).plano)
-export const demandasExtras = computed(() => separarProducao(registrosProducao.value).extras)
+const producaoSeparada = computed(() => separarProducao(registrosProducao.value))
+export const itens = computed(() => producaoSeparada.value.plano)
+export const demandasExtras = computed(() => producaoSeparada.value.extras)
 export const visitas = computed(() => registrosProducao.value.filter(i => i.tipoRegistro === 'visita') as unknown as Visita[])
 export const agenda = lista<Evento>('agenda')
 // Payables share the existing financial collection with an explicit discriminator.
@@ -45,19 +46,37 @@ export const clientesPorId = computed(() => Object.fromEntries(clientes.value.ma
 const novoId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 
 async function carregar(col: Colecao) {
+  const usuario = session.value?.user.id
   const { data, error } = await supabase!.from(TABELA).select('id,dados').eq('colecao', col).limit(20000)
   if (error) throw error
+  if (session.value?.user.id !== usuario) return
   const m: Record<string, Record<string, unknown>> = {}
   for (const r of data) m[r.id] = r.dados
   cache[col] = m
 }
 
-export async function carregarTudo() {
+let ultimaAtualizacao = 0
+let atualizacao: Promise<void> | undefined
+let usuarioAtualizacao: string | undefined
+export function carregarTudo(): Promise<void> {
+  const usuario = session.value?.user.id
+  if (atualizacao && usuarioAtualizacao === usuario) return atualizacao
+  usuarioAtualizacao = usuario
+  const tarefa = atualizarTudo()
+  atualizacao = tarefa
+  void tarefa.finally(() => { if (atualizacao === tarefa) atualizacao = undefined })
+  return tarefa
+}
+async function atualizarTudo() {
+  const usuario = session.value?.user.id
   try {
     erroDados.value = ''
     await Promise.all(COLECOES.map(carregar))
+    if (session.value?.user.id !== usuario) return
+    ultimaAtualizacao = Date.now()
     carregado.value = true
   } catch {
+    if (session.value?.user.id !== usuario) return
     erroDados.value = 'Não foi possível carregar os dados. Verifique a internet e recarregue a página.'
   }
 }
@@ -79,7 +98,7 @@ function ouvirMudancas() {
     })
     .subscribe()
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && session.value) COLECOES.forEach(c => carregar(c).catch(() => {}))
+    if (document.visibilityState === 'visible' && session.value && Date.now() - ultimaAtualizacao > 30000) void carregarTudo()
   })
 }
 

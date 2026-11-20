@@ -5,6 +5,7 @@ import { googleEventsForMonth } from './google-events'
 export function useGoogleCalendar(month: Ref<string>) {
   const events = ref<Evento[]>([]), connected = ref(false), configured = ref(false), checking = ref(true), busy = ref(false), error = ref(''), syncedAt = ref('')
   let controller: AbortController | undefined, sequence = 0, stopped = false, timer: ReturnType<typeof setInterval> | undefined
+  let lastSync = 0
   async function api(action: string, method = 'GET', signal?: AbortSignal) {
     const token = session.value?.access_token
     if (!token) throw new Error('Entre novamente na Central.')
@@ -22,6 +23,7 @@ export function useGoogleCalendar(month: Ref<string>) {
       const data = await api(`events&month=${encodeURIComponent(selected)}`, 'GET', controller.signal)
       if (current !== sequence || stopped) return
       events.value = googleEventsForMonth(data.events, selected)
+      lastSync = Date.now()
       syncedAt.value = new Date(data.syncedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       error.value = ''
     } catch (e) { if (current === sequence && !stopped && !(e instanceof Error && e.name === 'AbortError')) error.value = e instanceof Error ? e.message : 'Falha ao atualizar a agenda.' }
@@ -45,9 +47,9 @@ export function useGoogleCalendar(month: Ref<string>) {
     catch (e) { error.value = e instanceof Error ? e.message : 'Falha ao desconectar.' }
     finally { busy.value = false }
   }
-  const visible = () => { if (document.visibilityState === 'visible' && !busy.value) void sync() }
+  const visible = () => { if (document.visibilityState === 'visible' && !busy.value && Date.now() - lastSync >= 60000) void sync() }
   watch(month, () => { events.value = []; syncedAt.value = ''; void sync() })
-  onMounted(() => { void check(); timer = setInterval(visible, 60000); document.addEventListener('visibilitychange', visible) })
+  onMounted(() => { void check(); timer = setInterval(() => { if (document.visibilityState === 'visible' && !busy.value) void sync() }, 60000); document.addEventListener('visibilitychange', visible) })
   onUnmounted(() => { stopped = true; sequence++; controller?.abort(); clearInterval(timer); document.removeEventListener('visibilitychange', visible) })
   return { events, connected, configured, checking, busy, error, syncedAt, sync, connect, disconnect }
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Clapperboard, MessageCircle, Pencil, Plus } from 'lucide-vue-next'
 import { Badge } from '@/components/ui/badge'
@@ -16,6 +16,7 @@ import { ativos, clientes } from '@/lib/store'
 import { abrir } from '@/lib/ui'
 
 const router = useRouter()
+const briefingsAbertos = reactive<Record<string, boolean>>({})
 const ORD: Record<CtStatus, number> = { renovar: 0, encerrado: 1, vigente: 2, futuro: 3 }
 const contratos = computed(() => ativos.value.map(c => ({ c, k: contrato(c) }))
   .sort((a, b) => (a.k ? ORD[a.k.st] : 9) - (b.k ? ORD[b.k.st] : 9) || (a.k?.fim || '').localeCompare(b.k?.fim || '')))
@@ -88,7 +89,7 @@ const barra = (st: CtStatus) => (st === 'renovar' ? 'bg-warning' : st === 'encer
             <Button variant="ghost" size="sm" @click="router.push({ path: '/producao', query: { cliente: c.id } })"><Clapperboard />Produção</Button>
             <Button v-if="waNum(c.telefone)" variant="ghost" size="sm" as="a" :href="`https://wa.me/${waNum(c.telefone)}`" target="_blank" rel="noopener"><MessageCircle />WhatsApp</Button>
           </CardFooter>
-          <CardContent><details><summary class="cursor-pointer text-sm font-semibold">Consultar briefing</summary><div class="mt-3"><BriefingResumo :cliente="c" /></div></details></CardContent>
+          <CardContent><details @toggle="briefingsAbertos[c.id] = ($event.target as HTMLDetailsElement).open"><summary class="cursor-pointer text-sm font-semibold">Consultar briefing</summary><div v-if="briefingsAbertos[c.id]" class="mt-3"><BriefingResumo :cliente="c" /></div></details></CardContent>
         </Card>
       </div>
     </template>

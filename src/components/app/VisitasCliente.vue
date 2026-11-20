@@ -53,7 +53,7 @@ async function alterarStatus(v: Visita, novo: Visita['status']) {
 <template>
   <Button variant="outline" size="sm" @click="abrir"><CalendarDays />Visitas por mês</Button>
   <Dialog :open="aberto" @update:open="v => { if (!busy) aberto = v }">
-    <DialogContent class="sm:max-w-3xl">
+    <DialogContent v-if="aberto" class="sm:max-w-3xl">
       <DialogHeader><DialogTitle>Visitas · {{ cliente.nome }}</DialogTitle><DialogDescription>Datas agendadas e histórico de remarcações de cada visita.</DialogDescription></DialogHeader>
       <div class="flex flex-wrap items-end justify-between gap-3"><Field label="Mês de acompanhamento" for="visita-mes"><Input id="visita-mes" v-model="mes" type="month" :disabled="busy" /></Field><Button :disabled="busy || !mes" @click="formulario()"><Plus />Agendar visita</Button></div>
       <div v-if="progresso" class="rounded-xl border bg-primary/5 p-4">
