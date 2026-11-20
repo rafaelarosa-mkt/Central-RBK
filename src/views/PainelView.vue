@@ -64,8 +64,6 @@ const alertas = computed(() => {
   return out.sort((a, b) => ord[a.tipo] - ord[b.tipo] || a.venc.localeCompare(b.venc))
 })
 
-const evProx = computed(() => agenda.value.filter(e => e.data > hoje && e.data <= addDias(hoje, 7))
-  .sort((a, b) => (a.data + (a.hora || '')).localeCompare(b.data + (b.hora || ''))).slice(0, 6))
 
 const fimContratos = computed(() => ativos.value.map(c => ({ c, k: contrato(c) }))
   .filter(x => x.k && (x.k.st === 'renovar' || x.k.st === 'encerrado'))
@@ -165,7 +163,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
         </CardContent>
       </Card>
 
-      <div class="grid gap-4 lg:grid-cols-[1.25fr_1fr]">
+      <div class="grid gap-4">
         <!-- pagamentos -->
         <Card class="gap-4">
           <CardHeader><CardTitle>Pagamentos para acompanhar</CardTitle><CardDescription>Vencendo hoje, atrasados e nos próximos 5 dias</CardDescription></CardHeader>
@@ -186,23 +184,6 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
           </CardContent>
         </Card>
 
-        <!-- agenda -->
-        <Card class="gap-4">
-          <CardHeader><CardTitle>Próximos compromissos da Central</CardTitle><CardDescription>Próximos 7 dias · consulte também os eventos do Google no calendário</CardDescription>
-            <CardAction><Button variant="ghost" size="sm" @click="router.push('/agenda')">Calendário<ChevronRight /></Button></CardAction></CardHeader>
-          <CardContent class="flex flex-col gap-2">
-            <p v-if="!evProx.length" class="text-muted-foreground text-sm">Nada agendado na Central nos próximos 7 dias.</p>
-            <button v-for="e in evProx" :key="e.id" type="button"
-              class="hover:bg-secondary flex items-center gap-3 rounded-lg px-2 py-2 text-left" @click="abrir({ tipo: 'evento', evento: e })">
-              <span class="text-muted-foreground w-12 shrink-0 text-xs font-bold tabular">{{ e.data === hoje ? (e.hora || 'hoje') : fmtD(e.data) }}</span>
-              <ClientDot :cliente="clientesPorId[e.clientId || '']" />
-              <span class="min-w-0 flex-1">
-                <span :class="['block truncate text-sm font-semibold', e.feito && 'text-muted-foreground line-through']">{{ e.titulo || TIPOS_EV[e.tipo] }}</span>
-                <span class="text-muted-foreground block truncate text-xs">{{ TIPOS_EV[e.tipo] }}{{ e.clientId && clientesPorId[e.clientId] ? ' · ' + clientesPorId[e.clientId].nome : '' }}</span>
-              </span>
-            </button>
-          </CardContent>
-        </Card>
       </div>
 
       <!-- contratos terminando -->
