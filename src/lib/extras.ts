@@ -17,7 +17,7 @@ export interface DemandaExtra {
   briefingDia?: BriefingDia
 }
 export function separarProducao<T extends { [k: string]: unknown }>(registros: T[]) {
-  return { plano: registros.filter(i => i.tipoRegistro !== 'demanda_extra'), extras: registros.filter(i => i.tipoRegistro === 'demanda_extra') as unknown as DemandaExtra[] }
+  return { plano: registros.filter(i => i.tipoRegistro !== 'demanda_extra' && i.tipoRegistro !== 'visita'), extras: registros.filter(i => i.tipoRegistro === 'demanda_extra') as unknown as DemandaExtra[] }
 }
 export function validarExtra(d: Omit<DemandaExtra, 'id'>) {
   if ((d.atendimento === 'avulso' ? !d.clienteAvulso?.trim() : !d.clientId) || !d.titulo.trim()) return 'Informe o cliente e o pedido.'

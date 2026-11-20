@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import ClientDot from '@/components/app/ClientDot.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
 import BriefingResumo from '@/components/app/BriefingResumo.vue'
+import VisitasCliente from '@/components/app/VisitasCliente.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
 import { brl, contrato, ctLabel, fmtBR, waNum, type CtStatus } from '@/lib/domain'
 import { ativos, clientes } from '@/lib/store'
@@ -80,6 +81,7 @@ const barra = (st: CtStatus) => (st === 'renovar' ? 'bg-warning' : st === 'encer
             </dl>
           </CardContent>
           <CardFooter class="mt-auto flex-wrap gap-1.5">
+            <VisitasCliente :cliente="c" />
             <Button variant="outline" size="sm" @click="abrir({ tipo: 'briefing', cliente: c })">Briefing</Button>
             <Button variant="outline" size="sm" @click="abrir({ tipo: 'cliente', cliente: c })"><Pencil />Editar</Button>
             <Button variant="ghost" size="sm" @click="router.push({ path: '/producao', query: { cliente: c.id } })"><Clapperboard />Produção</Button>
