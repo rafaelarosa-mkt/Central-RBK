@@ -153,9 +153,9 @@ export function valoresPagamento(c: Cliente, p?: Pagamento) {
 }
 
 // Forecast by billing month / expense due month, never a bank-account balance.
-export function saldoMensal(clientes: Cliente[], pagamentos: Record<string, Pagamento>, contas: ContaPagar[], mes: string) {
+export function saldoMensal(clientes: Cliente[], pagamentos: Record<string, Pagamento>, contas: ContaPagar[], mes: string, extras = { previsto: 0, recebido: 0 }) {
   const centavos = (valor: number) => Number.isFinite(valor) ? Math.round(Math.max(0, valor) * 100) : 0
-  let entradas = 0, recebido = 0, despesas = 0, pago = 0
+  let entradas = centavos(extras.previsto), recebido = centavos(extras.recebido), despesas = 0, pago = 0
   for (const c of clientes) {
     if (c.ativo === false) continue
     const p = pagamentos[`${c.id}_${mes}`]

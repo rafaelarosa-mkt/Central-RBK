@@ -13,16 +13,25 @@ import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
 import { brl, fmtD, fmtMes, pagStatus, todayStr, vencData, valoresPagamento, type Cliente } from '@/lib/domain'
-import { ativos, db, mesAtual, pagamentos } from '@/lib/store'
+import { ativos, db, mesAtual, pagamentos, demandasExtras, clientesPorId } from '@/lib/store'
 import { abrir, salvar } from '@/lib/ui'
 
+import { financeiroExtras, type DemandaExtra } from '@/lib/extras'
+const extras = computed(() => financeiroExtras(demandasExtras.value, mesAtual.value, todayStr()))
+const extraBusy = ref(false)
+async function pagarExtra(d: DemandaExtra) {
+  if (extraBusy.value) return
+  extraBusy.value = true
+  await salvar(() => db.atualizar('itens', d.id, { pagoExtra: !d.pagoExtra, pagoEmExtra: d.pagoExtra ? '' : todayStr() }), d.pagoExtra ? 'Recebimento desfeito' : 'Recebimento extra registrado')
+  extraBusy.value = false
+}
 const linhas = computed(() => ativos.value.map(c => {
   const p = pagamentos.value[`${c.id}_${mesAtual.value}`]
   const valores = valoresPagamento(c, p)
   return { c, p, st: pagStatus(c, mesAtual.value, pagamentos.value), val: valores.dinheiro, permuta: valores.permuta }
 }))
 const tot = computed(() => {
-  let prev = 0, rec = 0, atr = 0, permuta = 0
+  let prev = extras.value.previsto, rec = extras.value.recebido, atr = extras.value.atrasado, permuta = 0
   for (const l of linhas.value) { prev += l.val; permuta += l.permuta; if (l.st === 'pago') rec += l.val; if (l.st === 'atrasado') atr += l.val }
   return { prev, rec, atr, permuta, aRec: prev - rec }
 })
@@ -34,9 +43,9 @@ const filtradas = computed(() => linhas.value
   .filter(l => filtro.value === 'todos' || (filtro.value === 'pendentes' ? l.st !== 'pago' && l.st !== 'dispensado' && l.val > 0 : l.st === filtro.value))
   .sort((a, b) => ordem[a.st] - ordem[b.st] || (a.c.diaPgto || 32) - (b.c.diaPgto || 32) || a.c.nome.localeCompare(b.c.nome, 'pt-BR')))
 const percentual = computed(() => tot.value.prev > 0 ? Math.min(100, Math.max(0, tot.value.rec / tot.value.prev * 100)) : 0)
-const recebidos = computed(() => linhas.value.filter(l => l.st === 'pago' && l.val > 0).length)
-const cobrados = computed(() => linhas.value.filter(l => l.st !== 'dispensado' && l.val > 0).length)
-const venceHoje = computed(() => linhas.value.filter(l => l.st === 'hoje').reduce((total, l) => total + l.val, 0))
+const recebidos = computed(() => linhas.value.filter(l => l.st === 'pago' && l.val > 0).length + extras.value.linhas.filter(d => d.pagoExtra).length)
+const cobrados = computed(() => linhas.value.filter(l => l.st !== 'dispensado' && l.val > 0).length + extras.value.linhas.length)
+const venceHoje = computed(() => linhas.value.filter(l => l.st === 'hoje').reduce((total, l) => total + l.val, extras.value.venceHoje))
 const id = (c: Cliente) => `${c.id}_${mesAtual.value}`
 const base = (c: Cliente) => ({ ...pagamentos.value[id(c)], clientId: c.id, mes: mesAtual.value, valor: Number(pagamentos.value[id(c)]?.valor ?? c.valor) || 0, valorPermuta: Number(pagamentos.value[id(c)]?.valorPermuta ?? c.valorPermuta) || 0 })
 const pagar = (c: Cliente) => salvar(() => db.salvar('pagamentos', id(c), { ...base(c), pago: true, pagoEm: todayStr() }), `${c.nome}: pagamento registrado`)
@@ -73,7 +82,7 @@ async function salvarMes() {
 <template>
   <div class="flex flex-col gap-6">
     <PageHeader titulo="Financeiro" :sub="`Pagamentos de ${fmtMes(mesAtual)}.`" />
-    <EmptyClientes v-if="!ativos.length" />
+    <EmptyClientes v-if="!ativos.length && !extras.linhas.length" />
     <template v-else>
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Card class="gap-1"><CardHeader><CardDescription>Previsto em dinheiro</CardDescription><CardTitle class="text-2xl font-extrabold tabular">{{ brl(tot.prev) }}</CardTitle></CardHeader></Card>
@@ -91,6 +100,18 @@ async function salvarMes() {
           <Progress :model-value="percentual" aria-label="Percentual do valor previsto recebido" />
           <CardDescription>{{ recebidos }} de {{ cobrados }} cobranças em dinheiro pagas · {{ brl(venceHoje) }} vencem hoje. Permutas são acompanhadas separadamente.</CardDescription>
         </CardHeader>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>Recebimentos de demandas extras</CardTitle><CardDescription>Cobranças únicas com vencimento neste mês, já incluídas nos totais acima. Arquivar uma demanda não cancela sua cobrança.</CardDescription></CardHeader>
+        <CardContent class="grid gap-3">
+          <p v-if="!extras.linhas.length" class="text-sm text-muted-foreground">Nenhuma cobrança extra neste mês.</p>
+          <div v-for="d in extras.linhas" :key="d.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
+            <div class="min-w-0 flex-1"><p class="font-semibold break-words">{{ d.titulo }}</p><p class="text-xs text-muted-foreground">{{ d.atendimento === 'avulso' ? d.clienteAvulso : clientesPorId[d.clientId]?.nome || 'Cliente removido' }} · Vence {{ fmtD(d.vencimentoExtra) }}<span v-if="d.pagoExtra"> · Recebido {{ fmtD(d.pagoEmExtra) }}</span></p></div>
+            <div class="text-right"><p class="font-bold">{{ brl(d.valorExtra) }}</p><p :class="['text-xs', !d.pagoExtra && d.vencimentoExtra! < todayStr() ? 'text-destructive' : 'text-muted-foreground']">{{ d.pagoExtra ? 'Recebido' : d.vencimentoExtra! < todayStr() ? 'Em atraso' : 'A receber' }}</p></div>
+            <Button size="sm" :variant="d.pagoExtra ? 'outline' : 'default'" :disabled="extraBusy" @click="pagarExtra(d)">{{ d.pagoExtra ? 'Desfazer recebimento' : 'Marcar recebido' }}</Button>
+          </div>
+          <RouterLink to="/producao?area=extras" class="text-primary text-sm underline">Abrir demandas extras para editar valores</RouterLink>
+        </CardContent>
       </Card>
       <Card class="gap-0 py-2">
         <CardHeader class="gap-4 pb-4">

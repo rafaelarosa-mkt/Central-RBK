@@ -11,13 +11,14 @@ import Field from '@/components/app/Field.vue'
 import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
 import { brl, fmtBR, fmtMes, saldoMensal, statusConta, todayStr, validarConta, vencimentosMensais, gerarContasMensais, type ContaPagar } from '@/lib/domain'
-import { ativos, pagamentos, contasPagar, db, mesAtual } from '@/lib/store'
+import { ativos, pagamentos, contasPagar, db, mesAtual, demandasExtras } from '@/lib/store'
+import { financeiroExtras } from '@/lib/extras'
 import { salvar } from '@/lib/ui'
 
 const busca = ref('')
 const filtro = ref('todos')
 const todosMeses = ref(false)
-const saldo = computed(() => saldoMensal(ativos.value, pagamentos.value, contasPagar.value, mesAtual.value))
+const saldo = computed(() => saldoMensal(ativos.value, pagamentos.value, contasPagar.value, mesAtual.value, financeiroExtras(demandasExtras.value, mesAtual.value, todayStr())))
 const ocupado = ref(false)
 const aberto = ref(false)
 const atual = ref<ContaPagar | null>(null)
@@ -92,7 +93,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
     <Card class="gap-4">
       <CardHeader>
         <CardTitle>Saldo previsto de {{ fmtMes(mesAtual) }}</CardTitle>
-        <CardDescription>Entradas em dinheiro do Contas a receber menos as despesas com vencimento neste mês. Inclui valores já recebidos e pagos.</CardDescription>
+        <CardDescription>Entradas em dinheiro das mensalidades e demandas extras menos as despesas com vencimento neste mês. Inclui valores já recebidos e pagos.</CardDescription>
       </CardHeader>
       <CardContent class="grid gap-4">
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">

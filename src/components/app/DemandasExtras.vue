@@ -12,11 +12,11 @@ import ClientDot from './ClientDot.vue'
 import BriefingResumo from './BriefingResumo.vue'
 import { clientes, clientesPorId, demandasExtras, db } from '@/lib/store'
 import { salvar } from '@/lib/ui'
-import { fmtD, todayStr } from '@/lib/domain'
+import { brl, fmtD, todayStr } from '@/lib/domain'
 import { CAMPOS_DIA, normalizarBriefingDia } from '@/lib/briefing-dia'
 import { ETAPAS_EXTRA, validarExtra, type DemandaExtra } from '@/lib/extras'
 const filtro = ref(''), busca = ref(''), arquivo = ref(false), aberto = ref(false), busy = ref(false), erro = ref(''), id = ref('')
-const vazio = (): Omit<DemandaExtra, 'id'> => ({ tipoRegistro: 'demanda_extra', clientId: '', titulo: '', descricao: '', categoria: 'Outro', prazo: '', prioridade: 'normal', etapa: 'recebido', responsavel: '', arquivada: false, atendimento: 'cliente', clienteAvulso: '' })
+const vazio = (): Omit<DemandaExtra, 'id'> => ({ tipoRegistro: 'demanda_extra', clientId: '', titulo: '', descricao: '', categoria: 'Outro', prazo: '', prioridade: 'normal', etapa: 'recebido', responsavel: '', arquivada: false, atendimento: 'cliente', clienteAvulso: '', valorExtra: 0, vencimentoExtra: '', pagoExtra: false, pagoEmExtra: '' })
 const f = reactive(vazio())
 const briefing = reactive(normalizarBriefingDia())
 const nomeCliente = (d: DemandaExtra) => d.atendimento === 'avulso' ? d.clienteAvulso || 'Cliente avulso' : clientesPorId.value[d.clientId]?.nome || 'Cliente removido'
@@ -31,7 +31,7 @@ async function enviar() {
   erro.value = validarExtra({ ...f, briefingDia: briefing })
   if (erro.value) return
   busy.value = true
-  const dados = { ...f, briefingDia: { ...briefing }, clientId: f.atendimento === 'avulso' ? '' : f.clientId, clienteAvulso: f.atendimento === 'avulso' ? f.clienteAvulso?.trim() : '', titulo: f.titulo.trim(), atualizado: Date.now() }
+  const dados = { ...f, valorExtra: Math.round(Number(f.valorExtra || 0) * 100) / 100, pagoEmExtra: f.pagoExtra ? f.pagoEmExtra : '', briefingDia: { ...briefing }, clientId: f.atendimento === 'avulso' ? '' : f.clientId, clienteAvulso: f.atendimento === 'avulso' ? f.clienteAvulso?.trim() : '', titulo: f.titulo.trim(), atualizado: Date.now() }
   const ok = await salvar(() => id.value ? db.atualizar('itens', id.value, dados) : db.criar('itens', dados), id.value ? 'Demanda atualizada' : 'Demanda extra criada')
   busy.value = false
   if (ok) aberto.value = false
@@ -69,7 +69,7 @@ async function arquivar() {
           <button v-for="d in col.itens" :key="d.id" type="button" class="group flex flex-col gap-3 rounded-xl border bg-card p-4 text-left shadow-xs transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary" @click="editar(d)">
             <span class="flex items-center gap-2 text-xs text-muted-foreground"><ClientDot :cliente="clientesPorId[d.clientId]" :size="8" /><span class="min-w-0 flex-1 truncate">{{ nomeCliente(d) }}</span><ArrowUpRight class="size-3.5" /></span>
             <span class="font-semibold leading-snug break-words">{{ d.titulo }}</span>
-            <span v-if="d.descricao" class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ d.descricao }}</span>
+            <span v-if="Number(d.valorExtra) > 0" class="text-sm font-bold text-primary">{{ brl(d.valorExtra) }} · {{ d.pagoExtra ? 'Recebido' : 'A receber' }}</span><span v-if="d.descricao" class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ d.descricao }}</span>
             <span class="flex flex-wrap gap-1.5"><Badge variant="muted">{{ d.categoria }}</Badge><Badge v-if="d.prioridade !== 'normal'" :variant="d.prioridade === 'urgente' ? 'danger' : 'info'">{{ d.prioridade === 'urgente' ? 'Urgente' : 'Alta prioridade' }}</Badge></span>
             <span :class="['flex items-center gap-1.5 border-t pt-3 text-xs', atrasada(d) ? 'text-destructive' : 'text-muted-foreground']"><Clock class="size-3.5" />{{ d.prazo ? `${atrasada(d) ? 'Atrasada · ' : 'Entrega · '}${fmtD(d.prazo)}` : 'Sem prazo definido' }}</span>
             <span v-if="d.briefingDia?.data" class="text-xs font-medium text-primary">Atendimento: {{ fmtD(d.briefingDia.data) }} {{ d.briefingDia.inicio }}</span><Badge v-if="d.atendimento === 'avulso'" variant="outline">Atendimento avulso</Badge><span v-if="d.responsavel" class="text-xs text-muted-foreground">Responsável: {{ d.responsavel }}</span>
@@ -85,6 +85,13 @@ async function arquivar() {
           <Field label="Tipo de pedido" for="extra-categoria"><NativeSelect id="extra-categoria" v-model="f.categoria"><option v-for="c in ['Arte avulsa', 'Vídeo extra', 'Campanha', 'Cobertura de evento', 'Ajuste / revisão', 'Material impresso', 'Outro']" :key="c">{{ c }}</option></NativeSelect></Field>
           <Field label="O que precisa ser feito?" for="extra-titulo" class="sm:col-span-2"><Input id="extra-titulo" v-model="f.titulo" required maxlength="200" placeholder="Ex.: Criar convite para inauguração" /></Field>
           <Field label="Descrição e orientações" for="extra-descricao" class="sm:col-span-2"><Textarea id="extra-descricao" v-model="f.descricao" rows="4" placeholder="Objetivo, formatos, referências e detalhes combinados com o cliente…" /></Field>
+          <section class="grid gap-4 rounded-xl border bg-secondary/40 p-4 sm:col-span-2 sm:grid-cols-2" aria-labelledby="extra-financeiro">
+            <div class="sm:col-span-2"><h3 id="extra-financeiro" class="font-bold">Valor e pagamento</h3><p class="mt-1 text-xs text-muted-foreground">Cobrança única, separada da mensalidade. Entra no financeiro pelo mês do vencimento, mesmo se a demanda for arquivada. Use zero quando não houver cobrança.</p></div>
+            <Field label="Valor da demanda (R$)" for="extra-valor"><Input id="extra-valor" v-model="f.valorExtra" type="number" min="0" step="0.01" /></Field>
+            <Field label="Vencimento da cobrança" for="extra-vencimento"><Input id="extra-vencimento" v-model="f.vencimentoExtra" type="date" :required="Number(f.valorExtra) > 0" /></Field>
+            <label class="flex items-center gap-2 text-sm"><input v-model="f.pagoExtra" type="checkbox" class="accent-primary" />Valor já recebido</label>
+            <Field v-if="f.pagoExtra" label="Recebido em" for="extra-pago-em"><Input id="extra-pago-em" v-model="f.pagoEmExtra" type="date" :max="todayStr()" required /></Field>
+          </section>
           <Field label="Prazo de entrega" for="extra-prazo"><Input id="extra-prazo" v-model="f.prazo" type="date" /></Field>
           <Field label="Prioridade" for="extra-prioridade"><NativeSelect id="extra-prioridade" v-model="f.prioridade"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></NativeSelect></Field>
           <Field label="Andamento" for="extra-etapa"><NativeSelect id="extra-etapa" v-model="f.etapa"><option v-for="(nome, etapa) in ETAPAS_EXTRA" :key="etapa" :value="etapa">{{ nome }}</option></NativeSelect></Field>

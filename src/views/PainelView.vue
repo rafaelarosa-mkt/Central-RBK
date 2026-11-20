@@ -14,7 +14,8 @@ import {
   STATUS, LBL, TIPOS_EV, addDias, brl, contrato, ctLabel, fmtBR, fmtD, fmtLongo, fmtMes, pad,
   pagStatus, prog, todayStr, vencData, valoresPagamento, ymNow, type Cliente,
 } from '@/lib/domain'
-import { agenda, ativos, clientesPorId, db, itens, mesAtual, pagamentos } from '@/lib/store'
+import { agenda, ativos, clientesPorId, db, itens, mesAtual, pagamentos, demandasExtras } from '@/lib/store'
+import { financeiroExtras } from '@/lib/extras'
 import { abrir, salvar } from '@/lib/ui'
 import { useGoogleCalendar } from '@/lib/google-calendar'
 
@@ -31,7 +32,8 @@ const linhas = computed(() => ativos.value.map(c => ({
 })))
 
 const totais = computed(() => {
-  let meta = 0, grav = 0, metaP = 0, postF = 0, aProg = 0, rec = 0, prev = 0
+  const extras = financeiroExtras(demandasExtras.value, mesAtual.value, hoje)
+  let meta = 0, grav = 0, metaP = 0, postF = 0, aProg = 0, rec = extras.recebido, prev = extras.previsto
   for (const { c, p, st } of linhas.value) {
     meta += Number(c.videosMes) || 0; grav += p.vGrav
     metaP += Number(c.postsMes) || 0; postF += p.pFeito; aProg += p.aProg
