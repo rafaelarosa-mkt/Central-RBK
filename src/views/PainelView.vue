@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { brl, valoresVisiveis } from '@/lib/privacidade'
+import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { CalendarPlus, ChevronRight, MessageCircle, Check } from 'lucide-vue-next'
@@ -11,7 +13,7 @@ import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
 import {
-  STATUS, LBL, TIPOS_EV, addDias, brl, contrato, ctLabel, fmtBR, fmtD, fmtLongo, fmtMes, pad,
+  STATUS, LBL, TIPOS_EV, addDias, contrato, ctLabel, fmtBR, fmtD, fmtLongo, fmtMes, pad,
   pagStatus, prog, todayStr, vencData, valoresPagamento, ymNow, type Cliente,
 } from '@/lib/domain'
 import { agenda, ativos, clientesPorId, db, itens, mesAtual, pagamentos, demandasExtras } from '@/lib/store'
@@ -135,10 +137,10 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
           </Card>
           <Card class="gap-3">
             <CardHeader><CardDescription>Recebido em dinheiro</CardDescription>
-              <CardTitle class="text-2xl font-extrabold tabular">{{ brl(totais.rec) }}</CardTitle></CardHeader>
+              <CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="totais.rec" /></CardTitle></CardHeader>
             <CardContent class="flex flex-col gap-2">
-              <Progress :model-value="pct(totais.rec, totais.prev)" indicator-class="bg-success" />
-              <span class="text-muted-foreground text-xs">de {{ brl(totais.prev) }} previstos</span>
+              <Progress v-if="valoresVisiveis" :model-value="pct(totais.rec, totais.prev)" indicator-class="bg-success" />
+              <span class="text-muted-foreground text-xs">de <ValorPrivado :valor="totais.prev" /> previstos</span>
             </CardContent>
           </Card>
         </div>
@@ -176,7 +178,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
               <ClientDot :cliente="a.c" />
               <div class="min-w-36 flex-1">
                 <p class="font-semibold leading-tight">{{ a.c.nome }}</p>
-                <p class="text-muted-foreground text-xs">{{ a.tipo === 'hoje' ? 'Vence hoje' : a.tipo === 'atrasado' ? `Atrasado desde ${fmtD(a.venc)}` : `Vence ${fmtD(a.venc)}` }} · {{ brl(valoresPagamento(a.c, pagamentos[`${a.c.id}_${cur}`]).dinheiro) }}</p>
+                <p class="text-muted-foreground text-xs">{{ a.tipo === 'hoje' ? 'Vence hoje' : a.tipo === 'atrasado' ? `Atrasado desde ${fmtD(a.venc)}` : `Vence ${fmtD(a.venc)}` }} · <ValorPrivado :valor="valoresPagamento(a.c, pagamentos[`${a.c.id}_${cur}`]).dinheiro" /></p>
               </div>
               <div class="flex gap-1.5">
                 <Button variant="outline" size="sm" @click="abrir({ tipo: 'cobranca', cliente: a.c, mes: cur })"><MessageCircle />Mensagem</Button>

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ValorInput from '@/components/app/ValorInput.vue'
+import { brl, valoresVisiveis } from '@/lib/privacidade'
+import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, reactive, ref } from 'vue'
 import { Plus, Sparkles, Clock, Archive, ArrowUpRight } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -12,7 +15,7 @@ import ClientDot from './ClientDot.vue'
 import BriefingResumo from './BriefingResumo.vue'
 import { clientes, clientesPorId, demandasExtras, db } from '@/lib/store'
 import { salvar } from '@/lib/ui'
-import { brl, fmtD, todayStr } from '@/lib/domain'
+import { fmtD, todayStr } from '@/lib/domain'
 import { CAMPOS_DIA, normalizarBriefingDia } from '@/lib/briefing-dia'
 import { ETAPAS_EXTRA, validarExtra, type DemandaExtra } from '@/lib/extras'
 const filtro = ref(''), busca = ref(''), arquivo = ref(false), aberto = ref(false), busy = ref(false), erro = ref(''), id = ref('')
@@ -69,7 +72,7 @@ async function arquivar() {
           <button v-for="d in col.itens" :key="d.id" type="button" class="group flex flex-col gap-3 rounded-xl border bg-card p-4 text-left shadow-xs transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-primary" @click="editar(d)">
             <span class="flex items-center gap-2 text-xs text-muted-foreground"><ClientDot :cliente="clientesPorId[d.clientId]" :size="8" /><span class="min-w-0 flex-1 truncate">{{ nomeCliente(d) }}</span><ArrowUpRight class="size-3.5" /></span>
             <span class="font-semibold leading-snug break-words">{{ d.titulo }}</span>
-            <span v-if="Number(d.valorExtra) > 0" class="text-sm font-bold text-primary">{{ brl(d.valorExtra) }} · {{ d.pagoExtra ? 'Recebido' : 'A receber' }}</span><span v-if="d.descricao" class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ d.descricao }}</span>
+            <span v-if="Number(d.valorExtra) > 0" class="text-sm font-bold text-primary"><ValorPrivado :valor="d.valorExtra" sem-olho /> · {{ d.pagoExtra ? 'Recebido' : 'A receber' }}</span><span v-if="d.descricao" class="line-clamp-2 text-xs leading-relaxed text-muted-foreground">{{ d.descricao }}</span>
             <span class="flex flex-wrap gap-1.5"><Badge variant="muted">{{ d.categoria }}</Badge><Badge v-if="d.prioridade !== 'normal'" :variant="d.prioridade === 'urgente' ? 'danger' : 'info'">{{ d.prioridade === 'urgente' ? 'Urgente' : 'Alta prioridade' }}</Badge></span>
             <span :class="['flex items-center gap-1.5 border-t pt-3 text-xs', atrasada(d) ? 'text-destructive' : 'text-muted-foreground']"><Clock class="size-3.5" />{{ d.prazo ? `${atrasada(d) ? 'Atrasada · ' : 'Entrega · '}${fmtD(d.prazo)}` : 'Sem prazo definido' }}</span>
             <span v-if="d.briefingDia?.data" class="text-xs font-medium text-primary">Atendimento: {{ fmtD(d.briefingDia.data) }} {{ d.briefingDia.inicio }}</span><Badge v-if="d.atendimento === 'avulso'" variant="outline">Atendimento avulso</Badge><span v-if="d.responsavel" class="text-xs text-muted-foreground">Responsável: {{ d.responsavel }}</span>
@@ -87,7 +90,7 @@ async function arquivar() {
           <Field label="Descrição e orientações" for="extra-descricao" class="sm:col-span-2"><Textarea id="extra-descricao" v-model="f.descricao" rows="4" placeholder="Objetivo, formatos, referências e detalhes combinados com o cliente…" /></Field>
           <section class="grid gap-4 rounded-xl border bg-secondary/40 p-4 sm:col-span-2 sm:grid-cols-2" aria-labelledby="extra-financeiro">
             <div class="sm:col-span-2"><h3 id="extra-financeiro" class="font-bold">Valor e pagamento</h3><p class="mt-1 text-xs text-muted-foreground">Cobrança única, separada da mensalidade. Entra no financeiro pelo mês do vencimento, mesmo se a demanda for arquivada. Use zero quando não houver cobrança.</p></div>
-            <Field label="Valor da demanda (R$)" for="extra-valor"><Input id="extra-valor" v-model="f.valorExtra" type="number" min="0" step="0.01" /></Field>
+            <Field label="Valor da demanda (R$)" for="extra-valor"><ValorInput id="extra-valor" v-model="f.valorExtra" type="number" min="0" step="0.01" /></Field>
             <Field label="Vencimento da cobrança" for="extra-vencimento"><Input id="extra-vencimento" v-model="f.vencimentoExtra" type="date" :required="Number(f.valorExtra) > 0" /></Field>
             <label class="flex items-center gap-2 text-sm"><input v-model="f.pagoExtra" type="checkbox" class="accent-primary" />Valor já recebido</label>
             <Field v-if="f.pagoExtra" label="Recebido em" for="extra-pago-em"><Input id="extra-pago-em" v-model="f.pagoEmExtra" type="date" :max="todayStr()" required /></Field>

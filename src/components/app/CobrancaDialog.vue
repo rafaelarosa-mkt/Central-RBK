@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import Field from './Field.vue'
+import OlhoValores from './OlhoValores.vue'
+import { valoresVisiveis } from '@/lib/privacidade'
 import { msgCobranca, pagStatus, valoresPagamento, waNum } from '@/lib/domain'
 import { pagamentos } from '@/lib/store'
 import { fechar, modal } from '@/lib/ui'
@@ -35,11 +37,13 @@ async function copiar() {
         <DialogDescription>{{ ctx?.cliente.nome }}. Você pode editar o texto antes de enviar.</DialogDescription>
       </DialogHeader>
       <Field label="Mensagem" for="mTxt" :hint="ctx?.cliente.telefone ? `WhatsApp: ${ctx.cliente.telefone}` : 'Cadastre o WhatsApp do cliente para abrir a conversa direto.'">
-        <Textarea id="mTxt" v-model="texto" class="min-h-48" />
+        <div class="flex items-center gap-2"><span class="text-sm">Visualizar mensagem e valor</span><OlhoValores /></div>
+        <Textarea v-if="valoresVisiveis" id="mTxt" v-model="texto" class="min-h-48" />
+        <p v-else class="rounded-lg border p-4">****</p>
       </Field>
       <DialogFooter>
-        <Button variant="outline" @click="copiar"><Copy />Copiar texto</Button>
-        <Button v-if="wa" as="a" :href="link" target="_blank" rel="noopener" variant="success"><MessageCircle />Abrir no WhatsApp</Button>
+        <Button variant="outline" :disabled="!valoresVisiveis" @click="copiar"><Copy />Copiar texto</Button>
+        <Button v-if="wa && valoresVisiveis" as="a" :href="link" target="_blank" rel="noopener" variant="success"><MessageCircle />Abrir no WhatsApp</Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

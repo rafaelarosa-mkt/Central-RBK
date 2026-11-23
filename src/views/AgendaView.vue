@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { brl, valoresVisiveis } from '@/lib/privacidade'
+import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, ref } from 'vue'
 import { CalendarPlus, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -6,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import ClientDot from '@/components/app/ClientDot.vue'
 import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
-import { DIAS, TIPOS_EV, addMes, brl, cor, dim, fmtLongo, fmtMes, gcal, pad, pagStatus, todayStr, vencData, ymNow } from '@/lib/domain'
+import { DIAS, TIPOS_EV, addMes, cor, dim, fmtLongo, fmtMes, gcal, pad, pagStatus, todayStr, vencData, ymNow } from '@/lib/domain'
 import { agenda, ativos, clientesPorId, db, pagamentos } from '@/lib/store'
 import { abrir, salvar } from '@/lib/ui'
 import { useGoogleCalendar } from '@/lib/google-calendar'
@@ -82,7 +84,7 @@ const alternar = (id: string, feito?: boolean) => salvar(() => db.atualizar('age
         <CardContent class="flex flex-col">
           <div v-for="c in pgsDia" :key="c.id" class="flex items-start gap-3 border-t py-3 first:border-t-0">
             <span class="text-warning w-12 font-bold">$</span>
-            <div class="min-w-0 flex-1"><p class="font-semibold">Pagamento: {{ c.nome }}</p><p class="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm tabular">{{ brl(c.valor) }} <PagBadge :status="pagStatus(c, diaSel.slice(0, 7), pagamentos)" /></p></div>
+            <div class="min-w-0 flex-1"><p class="font-semibold">Pagamento: {{ c.nome }}</p><p class="text-muted-foreground mt-0.5 flex items-center gap-2 text-sm tabular"><ValorPrivado :valor="c.valor" /> <PagBadge :status="pagStatus(c, diaSel.slice(0, 7), pagamentos)" /></p></div>
           </div>
           <div v-for="e in evsDia" :key="e.id" class="flex items-start gap-3 border-t py-3 first:border-t-0">
             <span class="w-12 shrink-0 text-sm font-bold tabular">{{ e.hora || 'dia' }}</span>

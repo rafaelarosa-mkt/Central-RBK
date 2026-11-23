@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { brl, valoresVisiveis } from '@/lib/privacidade'
+import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { Clapperboard, MessageCircle, Pencil, Plus } from 'lucide-vue-next'
@@ -11,7 +13,7 @@ import PageHeader from '@/components/app/PageHeader.vue'
 import BriefingResumo from '@/components/app/BriefingResumo.vue'
 import VisitasCliente from '@/components/app/VisitasCliente.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
-import { brl, contrato, ctLabel, fmtBR, waNum, type CtStatus } from '@/lib/domain'
+import { contrato, ctLabel, fmtBR, waNum, type CtStatus } from '@/lib/domain'
 import { ativos, clientes } from '@/lib/store'
 import { abrir } from '@/lib/ui'
 
@@ -72,8 +74,8 @@ const barra = (st: CtStatus) => (st === 'renovar' ? 'bg-warning' : st === 'encer
               <dt class="text-muted-foreground">Plano</dt><dd class="break-words">{{ c.plano || '—' }}</dd>
               <dt class="text-muted-foreground">Por mês</dt><dd>{{ Number(c.videosMes) || 0 }} vídeos · {{ Number(c.postsMes) || 0 }} posts</dd>
               <dt class="text-muted-foreground">Visitas / mês</dt><dd>{{ c.visitasMes == null ? 'Não definido' : c.visitasMes }}</dd>
-              <dt class="text-muted-foreground">Dinheiro / mês</dt><dd class="tabular">{{ brl(c.valor) }}<template v-if="c.diaPgto"> · dia {{ c.diaPgto }}</template></dd>
-              <dt class="text-muted-foreground">Permuta / mês</dt><dd class="tabular">{{ brl(c.valorPermuta) }}</dd>
+              <dt class="text-muted-foreground">Dinheiro / mês</dt><dd class="tabular"><ValorPrivado :valor="c.valor" /><template v-if="c.diaPgto"> · dia {{ c.diaPgto }}</template></dd>
+              <dt class="text-muted-foreground">Permuta / mês</dt><dd class="tabular"><ValorPrivado :valor="c.valorPermuta" /></dd>
               <template v-if="c.obsPgto"><dt class="text-muted-foreground">Pgto.</dt><dd class="break-words">{{ c.obsPgto }}</dd></template>
               <dt class="text-muted-foreground">Contrato</dt><dd class="tabular">{{ contrato(c) ? `${fmtBR(contrato(c)!.ini)} a ${fmtBR(contrato(c)!.fim)}` : 'datas não informadas' }}</dd>
               <template v-if="c.contato"><dt class="text-muted-foreground">Contato</dt><dd class="break-words">{{ c.contato }}</dd></template>

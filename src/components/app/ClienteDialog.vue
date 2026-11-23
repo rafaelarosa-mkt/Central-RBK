@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ValorInput from '@/components/app/ValorInput.vue'
 import { computed, reactive, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -61,8 +62,8 @@ async function enviar() {
         <Field label="Vídeos por mês" for="cVid"><Input id="cVid" v-model="f.videosMes" type="number" min="0" /></Field>
         <Field label="Visitas previstas por mês" for="cVisitas" hint="Ex.: 1 ou 2 visitas. Deixe vazio se ainda não foi definido."><Input id="cVisitas" v-model="f.visitasMes" type="number" min="0" step="1" placeholder="Ex.: 2" /></Field>
         <Field label="Posts por mês" for="cPost"><Input id="cPost" v-model="f.postsMes" type="number" min="0" /></Field>
-        <Field label="A receber em dinheiro / mês (R$)" for="cVal"><Input id="cVal" v-model="f.valor" type="number" min="0" step="0.01" /></Field>
-        <Field label="Permuta / mês (R$)" for="cPermuta"><Input id="cPermuta" v-model="f.valorPermuta" type="number" min="0" step="0.01" /></Field>
+        <Field label="A receber em dinheiro / mês (R$)" for="cVal"><ValorInput id="cVal" v-model="f.valor" type="number" min="0" step="0.01" /></Field>
+        <Field label="Permuta / mês (R$)" for="cPermuta"><ValorInput id="cPermuta" v-model="f.valorPermuta" type="number" min="0" step="0.01" /></Field>
         <p class="text-muted-foreground text-xs sm:col-span-2">Informe os valores separadamente. A permuta não entra no valor a receber em dinheiro.</p>
         <Field label="Dia do pagamento" for="cDia"><Input id="cDia" v-model="f.diaPgto" type="number" min="1" max="31" /></Field>
         <Field label="Observação do pagamento" for="cObsP" class="sm:col-span-2"><Input id="cObsP" v-model="f.obsPgto" placeholder="Ex.: permuta em serviços de divulgação" /></Field>

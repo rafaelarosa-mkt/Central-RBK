@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { ocultarValores } from '@/lib/privacidade'
+import OlhoValores from '@/components/app/OlhoValores.vue'
 import { useRoute } from 'vue-router'
 import { usePreferredDark } from '@vueuse/core'
 import { watchEffect } from 'vue'
@@ -24,6 +26,11 @@ const dark = usePreferredDark()
 watchEffect(() => document.documentElement.classList.toggle('dark', dark.value))
 
 const route = useRoute()
+watch(() => route.fullPath, ocultarValores)
+watch(() => session.value?.user.id, ocultarValores)
+const ocultarAoSair = () => { if (document.visibilityState !== 'visible') ocultarValores() }
+onMounted(() => document.addEventListener('visibilitychange', ocultarAoSair))
+onUnmounted(() => document.removeEventListener('visibilitychange', ocultarAoSair))
 const NAV = [
   { to: '/', label: 'Painel', icon: LayoutDashboard },
   { to: '/producao', label: 'Produção', icon: Clapperboard },
@@ -102,6 +109,7 @@ const sair = () => supabase?.auth.signOut({ scope: 'local' })
           </div>
           <span class="text-muted-foreground hidden text-sm font-semibold md:block">{{ route.meta.titulo }}</span>
           <div class="ml-auto flex items-center gap-2">
+            <OlhoValores />
             <MesSwitcher v-if="mostraMes" v-model="mesAtual" class="hidden sm:flex" />
             <DropdownMenu>
               <DropdownMenuTrigger as-child>

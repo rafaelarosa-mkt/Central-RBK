@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ValorInput from '@/components/app/ValorInput.vue'
+import { brl, valoresVisiveis } from '@/lib/privacidade'
+import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, reactive, ref } from 'vue'
 import { Check, MessageCircle, Undo2, Pencil } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -12,7 +15,7 @@ import ClientDot from '@/components/app/ClientDot.vue'
 import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
 import EmptyClientes from '@/components/app/EmptyClientes.vue'
-import { brl, fmtD, fmtMes, pagStatus, todayStr, vencData, valoresPagamento, type Cliente } from '@/lib/domain'
+import { fmtD, fmtMes, pagStatus, todayStr, vencData, valoresPagamento, type Cliente } from '@/lib/domain'
 import { ativos, db, mesAtual, pagamentos, demandasExtras, clientesPorId } from '@/lib/store'
 import { abrir, salvar } from '@/lib/ui'
 
@@ -85,20 +88,20 @@ async function salvarMes() {
     <EmptyClientes v-if="!ativos.length && !extras.linhas.length" />
     <template v-else>
       <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Card class="gap-1"><CardHeader><CardDescription>Previsto em dinheiro</CardDescription><CardTitle class="text-2xl font-extrabold tabular">{{ brl(tot.prev) }}</CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>Recebido em dinheiro</CardDescription><CardTitle class="text-success text-2xl font-extrabold tabular">{{ brl(tot.rec) }}</CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>A receber</CardDescription><CardTitle class="text-2xl font-extrabold tabular">{{ brl(tot.aRec) }}</CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>Atrasado</CardDescription><CardTitle :class="['text-2xl font-extrabold tabular', tot.atr && 'text-destructive']">{{ brl(tot.atr) }}</CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>Permuta prevista</CardDescription><CardTitle class="text-2xl font-extrabold tabular">{{ brl(tot.permuta) }}</CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Previsto em dinheiro</CardDescription><CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.prev" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Recebido em dinheiro</CardDescription><CardTitle class="text-success text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.rec" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>A receber</CardDescription><CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.aRec" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Atrasado</CardDescription><CardTitle :class="['text-2xl font-extrabold tabular', tot.atr && 'text-destructive']"><ValorPrivado :valor="tot.atr" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Permuta prevista</CardDescription><CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.permuta" /></CardTitle></CardHeader></Card>
       </div>
       <Card>
         <CardHeader class="gap-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <CardTitle>Recebimentos do mês</CardTitle>
-            <span class="text-success text-xl font-bold tabular">{{ percentual.toFixed(0) }}%</span>
+            <span class="text-success text-xl font-bold tabular">{{ valoresVisiveis ? percentual.toFixed(0) + '%' : '****' }}</span>
           </div>
-          <Progress :model-value="percentual" aria-label="Percentual do valor previsto recebido" />
-          <CardDescription>{{ recebidos }} de {{ cobrados }} cobranças em dinheiro pagas · {{ brl(venceHoje) }} vencem hoje. Permutas são acompanhadas separadamente.</CardDescription>
+          <Progress v-if="valoresVisiveis" :model-value="percentual" aria-label="Percentual do valor previsto recebido" />
+          <CardDescription>{{ recebidos }} de {{ cobrados }} cobranças em dinheiro pagas · <ValorPrivado :valor="venceHoje" /> vencem hoje. Permutas são acompanhadas separadamente.</CardDescription>
         </CardHeader>
       </Card>
       <Card>
@@ -107,7 +110,7 @@ async function salvarMes() {
           <p v-if="!extras.linhas.length" class="text-sm text-muted-foreground">Nenhuma cobrança extra neste mês.</p>
           <div v-for="d in extras.linhas" :key="d.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
             <div class="min-w-0 flex-1"><p class="font-semibold break-words">{{ d.titulo }}</p><p class="text-xs text-muted-foreground">{{ d.atendimento === 'avulso' ? d.clienteAvulso : clientesPorId[d.clientId]?.nome || 'Cliente removido' }} · Vence {{ fmtD(d.vencimentoExtra) }}<span v-if="d.pagoExtra"> · Recebido {{ fmtD(d.pagoEmExtra) }}</span></p></div>
-            <div class="text-right"><p class="font-bold">{{ brl(d.valorExtra) }}</p><p :class="['text-xs', !d.pagoExtra && d.vencimentoExtra! < todayStr() ? 'text-destructive' : 'text-muted-foreground']">{{ d.pagoExtra ? 'Recebido' : d.vencimentoExtra! < todayStr() ? 'Em atraso' : 'A receber' }}</p></div>
+            <div class="text-right"><p class="font-bold"><ValorPrivado :valor="d.valorExtra" /></p><p :class="['text-xs', !d.pagoExtra && d.vencimentoExtra! < todayStr() ? 'text-destructive' : 'text-muted-foreground']">{{ d.pagoExtra ? 'Recebido' : d.vencimentoExtra! < todayStr() ? 'Em atraso' : 'A receber' }}</p></div>
             <Button size="sm" :variant="d.pagoExtra ? 'outline' : 'default'" :disabled="extraBusy" @click="pagarExtra(d)">{{ d.pagoExtra ? 'Desfazer recebimento' : 'Marcar recebido' }}</Button>
           </div>
           <RouterLink to="/producao?area=extras" class="text-primary text-sm underline">Abrir demandas extras para editar valores</RouterLink>
@@ -145,7 +148,7 @@ async function salvarMes() {
               </div>
             </div>
             <PagBadge :status="st" />
-            <div class="min-w-32 text-right tabular"><p class="font-bold">{{ brl(val) }} <span class="text-muted-foreground text-xs font-normal">dinheiro</span></p><p class="text-muted-foreground text-xs">{{ brl(permuta) }} em permuta</p></div>
+            <div class="min-w-32 text-right tabular"><p class="font-bold"><ValorPrivado :valor="val" /> <span class="text-muted-foreground text-xs font-normal">dinheiro</span></p><p class="text-muted-foreground text-xs"><ValorPrivado :valor="permuta" /> em permuta</p></div>
             <div class="flex flex-wrap gap-1.5">
               <Button variant="ghost" size="sm" @click="editar(c)"><Pencil />Editar mês</Button>
               <Button v-if="st === 'dispensado'" variant="outline" size="sm" @click="reativar(c)"><Undo2 />Reativar cobrança</Button>
@@ -163,8 +166,8 @@ async function salvarMes() {
       <DialogContent>
         <DialogHeader><DialogTitle>Valores deste mês</DialogTitle><DialogDescription>{{ edicao?.cliente.nome }} · {{ edicao ? fmtMes(edicao.mes) : '' }}. Altera somente este mês; os valores do cadastro e dos outros meses são preservados.</DialogDescription></DialogHeader>
         <form class="grid gap-4" @submit.prevent="salvarMes">
-          <Field label="Valor a receber em dinheiro (R$)" for="fDinheiro"><Input id="fDinheiro" v-model="f.valor" type="number" min="0" step="0.01" required :disabled="!!pagoNaEdicao || gravando" /></Field>
-          <Field label="Valor em permuta (R$)" for="fPermuta"><Input id="fPermuta" v-model="f.valorPermuta" type="number" min="0" step="0.01" required :disabled="gravando" /></Field>
+          <Field label="Valor a receber em dinheiro (R$)" for="fDinheiro"><ValorInput id="fDinheiro" v-model="f.valor" type="number" min="0" step="0.01" required :disabled="!!pagoNaEdicao || gravando" /></Field>
+          <Field label="Valor em permuta (R$)" for="fPermuta"><ValorInput id="fPermuta" v-model="f.valorPermuta" type="number" min="0" step="0.01" required :disabled="gravando" /></Field>
           <label class="flex items-center gap-2 text-sm"><input v-model="f.naoCobrar" type="checkbox" class="accent-primary size-4" :disabled="!!pagoNaEdicao || gravando">Não cobrar neste mês</label>
           <p class="text-muted-foreground text-xs">Ao dispensar, dinheiro e permuta saem dos totais deste mês. Os valores ficam guardados para você reativar a cobrança.</p>
           <p v-if="pagoNaEdicao" class="text-muted-foreground text-xs">Para dispensar ou corrigir o valor em dinheiro, desfaça o pagamento primeiro.</p>

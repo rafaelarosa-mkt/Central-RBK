@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import ValorInput from '@/components/app/ValorInput.vue'
+import { brl, valoresVisiveis } from '@/lib/privacidade'
+import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, reactive, ref } from 'vue'
 import { Check, Pencil, Plus, Trash2, Undo2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -10,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import Field from '@/components/app/Field.vue'
 import PagBadge from '@/components/app/PagBadge.vue'
 import PageHeader from '@/components/app/PageHeader.vue'
-import { brl, fmtBR, fmtMes, saldoMensal, statusConta, todayStr, validarConta, vencimentosMensais, gerarContasMensais, type ContaPagar } from '@/lib/domain'
+import { fmtBR, fmtMes, saldoMensal, statusConta, todayStr, validarConta, vencimentosMensais, gerarContasMensais, type ContaPagar } from '@/lib/domain'
 import { ativos, pagamentos, contasPagar, db, mesAtual, demandasExtras } from '@/lib/store'
 import { financeiroExtras } from '@/lib/extras'
 import { salvar } from '@/lib/ui'
@@ -97,10 +100,10 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
       </CardHeader>
       <CardContent class="grid gap-4">
         <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Entradas previstas</p><p class="mt-1 text-2xl font-bold tabular">{{ brl(saldo.entradas) }}</p><p class="text-muted-foreground mt-2 text-xs">{{ brl(saldo.recebido) }} recebidos · {{ brl(saldo.aReceber) }} a receber</p></div>
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Despesas previstas</p><p class="mt-1 text-2xl font-bold tabular">{{ brl(saldo.despesas) }}</p><p class="text-muted-foreground mt-2 text-xs">{{ brl(saldo.pago) }} pagos · {{ brl(saldo.aPagar) }} a pagar</p></div>
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai sobrar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.sobra > 0 && 'text-success']">{{ brl(saldo.sobra) }}</p><p class="text-muted-foreground mt-2 text-xs">Após cobrir todas as despesas previstas.</p></div>
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai faltar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.falta > 0 && 'text-destructive']">{{ brl(saldo.falta) }}</p><p class="text-muted-foreground mt-2 text-xs">Valor adicional necessário para cobrir o mês.</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Entradas previstas</p><p class="mt-1 text-2xl font-bold tabular"><ValorPrivado :valor="saldo.entradas" /></p><p class="text-muted-foreground mt-2 text-xs"><ValorPrivado :valor="saldo.recebido" /> recebidos · <ValorPrivado :valor="saldo.aReceber" /> a receber</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Despesas previstas</p><p class="mt-1 text-2xl font-bold tabular"><ValorPrivado :valor="saldo.despesas" /></p><p class="text-muted-foreground mt-2 text-xs"><ValorPrivado :valor="saldo.pago" /> pagos · <ValorPrivado :valor="saldo.aPagar" /> a pagar</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai sobrar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.sobra > 0 && 'text-success']"><ValorPrivado :valor="saldo.sobra" /></p><p class="text-muted-foreground mt-2 text-xs">Após cobrir todas as despesas previstas.</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai faltar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.falta > 0 && 'text-destructive']"><ValorPrivado :valor="saldo.falta" /></p><p class="text-muted-foreground mt-2 text-xs">Valor adicional necessário para cobrir o mês.</p></div>
         </div>
         <p :class="['text-sm font-semibold', saldo.saldo < 0 ? 'text-destructive' : saldo.saldo > 0 ? 'text-success' : 'text-muted-foreground']">{{ saldo.saldo > 0 ? `Previsão de sobra de ${brl(saldo.sobra)}.` : saldo.saldo < 0 ? `As despesas superam as entradas em ${brl(saldo.falta)}.` : 'Entradas e despesas previstas estão equilibradas.' }}</p>
         <p class="text-muted-foreground text-xs">Projeção, não saldo bancário. Não inclui saldo anterior, permutas, cobranças dispensadas ou contas excluídas. Sempre considera o mês selecionado no topo, mesmo ao listar todos os meses.</p>
@@ -108,10 +111,10 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
       </CardContent>
     </Card>
     <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Card class="gap-1"><CardHeader><CardDescription>Total de despesas</CardDescription><CardTitle class="text-2xl tabular">{{ brl(totais.total) }}</CardTitle></CardHeader></Card>
-      <Card class="gap-1"><CardHeader><CardDescription>Pago</CardDescription><CardTitle class="text-success text-2xl tabular">{{ brl(totais.pago) }}</CardTitle></CardHeader></Card>
-      <Card class="gap-1"><CardHeader><CardDescription>A pagar</CardDescription><CardTitle class="text-2xl tabular">{{ brl(totais.aberto) }}</CardTitle></CardHeader></Card>
-      <Card class="gap-1"><CardHeader><CardDescription>Em atraso</CardDescription><CardTitle class="text-destructive text-2xl tabular">{{ brl(totais.atrasado) }}</CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>Total de despesas</CardDescription><CardTitle class="text-2xl tabular"><ValorPrivado :valor="totais.total" /></CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>Pago</CardDescription><CardTitle class="text-success text-2xl tabular"><ValorPrivado :valor="totais.pago" /></CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>A pagar</CardDescription><CardTitle class="text-2xl tabular"><ValorPrivado :valor="totais.aberto" /></CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>Em atraso</CardDescription><CardTitle class="text-destructive text-2xl tabular"><ValorPrivado :valor="totais.atrasado" /></CardTitle></CardHeader></Card>
     </div>
     <Card>
       <CardHeader class="gap-3">
@@ -137,7 +140,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
             <p v-if="c.recorrenciaFim" class="text-muted-foreground text-xs">Mensal · {{ c.parcela }}/{{ c.totalParcelas }} · até {{ fmtMes(c.recorrenciaFim) }}</p>
           </div>
           <span v-if="c.excluida" class="text-muted-foreground text-sm">Excluída</span><PagBadge v-else :status="statusConta(c)" />
-          <span class="min-w-24 text-right font-bold tabular">{{ brl(c.valor) }}</span>
+          <span class="min-w-24 text-right font-bold tabular"><ValorPrivado :valor="c.valor" /></span>
           <div class="flex flex-wrap gap-1.5">
             <Button v-if="c.excluida" variant="outline" size="sm" :disabled="ocupado" @click="alterar(c, { excluida: false }, 'Conta restaurada')"><Undo2 />Restaurar</Button>
             <template v-else>
@@ -157,7 +160,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
           <Field label="Descrição" for="cpDescricao" class="sm:col-span-2"><Input id="cpDescricao" v-model="f.descricao" required maxlength="200" placeholder="Ex.: edição de vídeos, aluguel, assinatura" :disabled="ocupado" /></Field>
           <Field label="Fornecedor / beneficiário" for="cpFornecedor"><Input id="cpFornecedor" v-model="f.fornecedor" maxlength="150" :disabled="ocupado" /></Field>
           <Field label="Categoria" for="cpCategoria"><Input id="cpCategoria" v-model="f.categoria" maxlength="80" placeholder="Ex.: software, produção" :disabled="ocupado" /></Field>
-          <Field label="Valor (R$)" for="cpValor"><Input id="cpValor" v-model="f.valor" type="number" min="0.01" step="0.01" required :disabled="ocupado" /></Field>
+          <Field label="Valor (R$)" for="cpValor"><ValorInput id="cpValor" v-model="f.valor" type="number" min="0.01" step="0.01" required :disabled="ocupado" /></Field>
           <Field :label="repetir ? 'Primeiro vencimento' : 'Vencimento'" for="cpVencimento"><Input id="cpVencimento" v-model="f.vencimento" type="date" required :disabled="ocupado" /></Field>
           <template v-if="!atual?.recorrenciaId">
             <label class="flex items-center gap-2 text-sm sm:col-span-2"><input v-model="repetir" type="checkbox" class="accent-primary size-4" :disabled="ocupado">Repetir todos os meses</label>
@@ -174,7 +177,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
       </DialogContent>
     </Dialog>
     <Dialog :open="!!excluir" @update:open="v => !v && !ocupado && (excluir = null)">
-      <DialogContent><DialogHeader><DialogTitle>Excluir conta?</DialogTitle><DialogDescription>{{ excluir?.descricao }} · {{ brl(excluir?.valor) }}. A conta sai dos totais e pode ser restaurada no filtro Excluídas.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" :disabled="ocupado" @click="excluir = null">Cancelar</Button><Button :disabled="ocupado" @click="excluir && alterar(excluir, { excluida: true }, 'Conta excluída; você pode restaurá-la')">Excluir conta</Button></DialogFooter></DialogContent>
+      <DialogContent><DialogHeader><DialogTitle>Excluir conta?</DialogTitle><DialogDescription>{{ excluir?.descricao }} · <ValorPrivado :valor="excluir?.valor" />. A conta sai dos totais e pode ser restaurada no filtro Excluídas.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" :disabled="ocupado" @click="excluir = null">Cancelar</Button><Button :disabled="ocupado" @click="excluir && alterar(excluir, { excluida: true }, 'Conta excluída; você pode restaurá-la')">Excluir conta</Button></DialogFooter></DialogContent>
     </Dialog>
   </div>
 </template>
