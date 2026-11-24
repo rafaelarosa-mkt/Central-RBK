@@ -251,5 +251,5 @@ export function msgCobranca(c: Cliente, m: string, valor: number, st: PagStatus)
   const quando = st === 'hoje' ? 'hoje é o dia do pagamento'
     : st === 'atrasado' ? `o pagamento com vencimento em ${fmtD(venc || '')} ainda está em aberto`
     : `o pagamento vence no dia ${fmtD(venc || '')}`
-  return `Olá, ${nome}! Tudo bem?\n\nPassando para lembrar que ${quando}, referente aos serviços de ${fmtMes(m).split(' ')[0]} da RBK Mídias, no valor de ${brl(valor)}.\n\nQualquer dúvida, estamos à disposição. Obrigado!`
+  return `Olá, ${nome}! Tudo bem?\n\nPassando para lembrar que ${quando}, referente aos serviços de ${fmtMes(m).split(' ')[0]} da RBK Mídias, no valor de ${brl(valor)}.\n\nChave Pix: 59612603000197\n\nQualquer dúvida, estamos à disposição. Obrigado!`
 }
