@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PagamentoData from '@/components/app/PagamentoData.vue'
 import ValorInput from '@/components/app/ValorInput.vue'
 import { brl, valoresVisiveis } from '@/lib/privacidade'
 import ValorPrivado from '@/components/app/ValorPrivado.vue'
@@ -51,7 +52,8 @@ const cobrados = computed(() => linhas.value.filter(l => l.st !== 'dispensado' &
 const venceHoje = computed(() => linhas.value.filter(l => l.st === 'hoje').reduce((total, l) => total + l.val, extras.value.venceHoje))
 const id = (c: Cliente) => `${c.id}_${mesAtual.value}`
 const base = (c: Cliente) => ({ ...pagamentos.value[id(c)], clientId: c.id, mes: mesAtual.value, valor: Number(pagamentos.value[id(c)]?.valor ?? c.valor) || 0, valorPermuta: Number(pagamentos.value[id(c)]?.valorPermuta ?? c.valorPermuta) || 0 })
-const pagar = (c: Cliente) => salvar(() => db.salvar('pagamentos', id(c), { ...base(c), pago: true, pagoEm: todayStr() }), `${c.nome}: pagamento registrado`)
+const pagar = (c: Cliente, mes: string, data: string) => salvar(() => db.atualizar('pagamentos', `${c.id}_${mes}`, { clientId: c.id, mes, valor: Number(pagamentos.value[`${c.id}_${mes}`]?.valor ?? c.valor) || 0, valorPermuta: Number(pagamentos.value[`${c.id}_${mes}`]?.valorPermuta ?? c.valorPermuta) || 0, pago: true, pagoEm: data }), `${c.nome}: pagamento registrado`)
+const registrar = (c: Cliente, mes: string) => (data: string) => pagar(c, mes, data)
 const desfazer = (c: Cliente) => salvar(() => db.salvar('pagamentos', id(c), { ...base(c), pago: false, pagoEm: '' }), 'Pagamento desfeito')
 const reativar = (c: Cliente) => salvar(() => db.salvar('pagamentos', id(c), { ...base(c), pago: false, naoCobrar: false, motivo: '' }), 'Cobrança reativada neste mês')
 const edicao = ref<{ cliente: Cliente; mes: string } | null>(null)
@@ -111,7 +113,7 @@ async function salvarMes() {
           <div v-for="d in extras.linhas" :key="d.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
             <div class="min-w-0 flex-1"><p class="font-semibold break-words">{{ d.titulo }}</p><p class="text-xs text-muted-foreground">{{ d.atendimento === 'avulso' ? d.clienteAvulso : clientesPorId[d.clientId]?.nome || 'Cliente removido' }} · Vence {{ fmtD(d.vencimentoExtra) }}<span v-if="d.pagoExtra"> · Recebido {{ fmtD(d.pagoEmExtra) }}</span></p></div>
             <div class="text-right"><p class="font-bold"><ValorPrivado :valor="d.valorExtra" /></p><p :class="['text-xs', !d.pagoExtra && d.vencimentoExtra! < todayStr() ? 'text-destructive' : 'text-muted-foreground']">{{ d.pagoExtra ? 'Recebido' : d.vencimentoExtra! < todayStr() ? 'Em atraso' : 'A receber' }}</p></div>
-            <Button size="sm" :variant="d.pagoExtra ? 'outline' : 'default'" :disabled="extraBusy" @click="pagarExtra(d)">{{ d.pagoExtra ? 'Desfazer recebimento' : 'Marcar recebido' }}</Button>
+            <PagamentoData :titulo="d.titulo" :data-inicial="d.pagoExtra ? d.pagoEmExtra : undefined" :rotulo="d.pagoExtra ? 'Editar data' : 'Marcar recebido'" :salvar-data="data => salvar(() => db.atualizar('itens', d.id, { pagoExtra: true, pagoEmExtra: data }), 'Data do recebimento salva')" /><Button v-if="d.pagoExtra" size="sm" variant="outline" :disabled="extraBusy" @click="pagarExtra(d)">Desfazer recebimento</Button>
           </div>
           <RouterLink to="/producao?area=extras" class="text-primary text-sm underline">Abrir demandas extras para editar valores</RouterLink>
         </CardContent>
@@ -152,10 +154,10 @@ async function salvarMes() {
             <div class="flex flex-wrap gap-1.5">
               <Button variant="ghost" size="sm" @click="editar(c)"><Pencil />Editar mês</Button>
               <Button v-if="st === 'dispensado'" variant="outline" size="sm" @click="reativar(c)"><Undo2 />Reativar cobrança</Button>
-              <Button v-if="st === 'pago'" variant="ghost" size="sm" @click="desfazer(c)"><Undo2 />Desfazer</Button>
+              <PagamentoData v-if="st === 'pago'" :titulo="c.nome" rotulo="Editar data" :data-inicial="p?.pagoEm" :salvar-data="registrar(c, mesAtual)" /><Button v-if="st === 'pago'" variant="ghost" size="sm" @click="desfazer(c)"><Undo2 />Desfazer</Button>
               <template v-else-if="st !== 'dispensado' && val > 0">
                 <Button variant="outline" size="sm" @click="abrir({ tipo: 'cobranca', cliente: c, mes: mesAtual })"><MessageCircle />Mensagem</Button>
-                <Button size="sm" @click="pagar(c)"><Check />Marcar pago</Button>
+                <PagamentoData :titulo="c.nome" :salvar-data="registrar(c, mesAtual)" />
               </template>
             </div>
           </div>

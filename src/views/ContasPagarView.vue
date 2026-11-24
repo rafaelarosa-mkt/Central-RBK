@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PagamentoData from '@/components/app/PagamentoData.vue'
 import ValorInput from '@/components/app/ValorInput.vue'
 import { brl, valoresVisiveis } from '@/lib/privacidade'
 import ValorPrivado from '@/components/app/ValorPrivado.vue'
@@ -146,7 +147,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
             <template v-else>
               <Button variant="ghost" size="sm" :disabled="ocupado" @click="editar(c)"><Pencil />Editar</Button>
               <Button v-if="c.pago" variant="outline" size="sm" :disabled="ocupado" @click="alterar(c, { pago: false, pagoEm: '' }, 'Pagamento desfeito')"><Undo2 />Desfazer pagamento</Button>
-              <Button v-else size="sm" :disabled="ocupado" @click="alterar(c, { pago: true, pagoEm: todayStr() }, 'Pagamento registrado')"><Check />Paga hoje</Button>
+              <PagamentoData v-else :titulo="c.descricao" :salvar-data="data => salvar(() => db.atualizar('pagamentos', c.id, { pago: true, pagoEm: data }), 'Pagamento registrado')" />
               <Button variant="ghost" size="icon-sm" :aria-label="`Excluir ${c.descricao}`" :disabled="ocupado" @click="excluir = c"><Trash2 /></Button>
             </template>
           </div>

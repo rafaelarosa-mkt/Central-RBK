@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PagamentoData from '@/components/app/PagamentoData.vue'
 import { brl, valoresVisiveis } from '@/lib/privacidade'
 import ValorPrivado from '@/components/app/ValorPrivado.vue'
 import { computed, ref } from 'vue'
@@ -73,8 +74,8 @@ const fimContratos = computed(() => ativos.value.map(c => ({ c, k: contrato(c) }
   .filter(x => x.k && (x.k.st === 'renovar' || x.k.st === 'encerrado'))
   .sort((a, b) => a.k!.fim.localeCompare(b.k!.fim)))
 
-const pagar = (c: Cliente) => salvar(() => db.salvar('pagamentos', `${c.id}_${cur}`,
-  { ...pagamentos.value[`${c.id}_${cur}`], clientId: c.id, mes: cur, pago: true, pagoEm: todayStr(), valor: valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).dinheiro, valorPermuta: valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).permuta }), `${c.nome}: pagamento registrado`)
+const pagar = (c: Cliente, data: string) => salvar(() => db.salvar('pagamentos', `${c.id}_${cur}`,
+  { ...pagamentos.value[`${c.id}_${cur}`], clientId: c.id, mes: cur, pago: true, pagoEm: data, valor: valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).dinheiro, valorPermuta: valoresPagamento(c, pagamentos.value[`${c.id}_${cur}`]).permuta }), `${c.nome}: pagamento registrado`)
 const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
 </script>
 
@@ -182,7 +183,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
               </div>
               <div class="flex gap-1.5">
                 <Button variant="outline" size="sm" @click="abrir({ tipo: 'cobranca', cliente: a.c, mes: cur })"><MessageCircle />Mensagem</Button>
-                <Button size="sm" @click="pagar(a.c)"><Check />Pago</Button>
+                <PagamentoData :titulo="a.c.nome" :salvar-data="data => pagar(a.c, data)" />
               </div>
             </div>
           </CardContent>
