@@ -89,12 +89,12 @@ async function salvarMes() {
     <PageHeader titulo="Financeiro" :sub="`Pagamentos de ${fmtMes(mesAtual)}.`" />
     <EmptyClientes v-if="!ativos.length && !extras.linhas.length" />
     <template v-else>
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Card class="gap-1"><CardHeader><CardDescription>Previsto em dinheiro</CardDescription><CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.prev" /></CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>Recebido em dinheiro</CardDescription><CardTitle class="text-success text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.rec" /></CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>A receber</CardDescription><CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.aRec" /></CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>Atrasado</CardDescription><CardTitle :class="['text-2xl font-extrabold tabular', tot.atr && 'text-destructive']"><ValorPrivado :valor="tot.atr" /></CardTitle></CardHeader></Card>
-        <Card class="gap-1"><CardHeader><CardDescription>Permuta prevista</CardDescription><CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="tot.permuta" /></CardTitle></CardHeader></Card>
+      <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
+        <Card class="gap-1"><CardHeader><CardDescription>Previsto em dinheiro</CardDescription><CardTitle class="text-xl font-extrabold tabular"><ValorPrivado :valor="tot.prev" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Recebido em dinheiro</CardDescription><CardTitle class="text-success text-xl font-extrabold tabular"><ValorPrivado :valor="tot.rec" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>A receber</CardDescription><CardTitle class="text-xl font-extrabold tabular"><ValorPrivado :valor="tot.aRec" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Atrasado</CardDescription><CardTitle :class="['text-xl font-extrabold tabular', tot.atr && 'text-destructive']"><ValorPrivado :valor="tot.atr" /></CardTitle></CardHeader></Card>
+        <Card class="gap-1"><CardHeader><CardDescription>Permuta prevista</CardDescription><CardTitle class="text-xl font-extrabold tabular"><ValorPrivado :valor="tot.permuta" /></CardTitle></CardHeader></Card>
       </div>
       <Card>
         <CardHeader class="gap-3">
@@ -112,7 +112,7 @@ async function salvarMes() {
           <p v-if="!extras.linhas.length" class="text-sm text-muted-foreground">Nenhuma cobrança extra neste mês.</p>
           <div v-for="d in extras.linhas" :key="d.id" class="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3">
             <div class="min-w-0 flex-1"><p class="font-semibold break-words">{{ d.titulo }}</p><p class="text-xs text-muted-foreground">{{ d.atendimento === 'avulso' ? d.clienteAvulso : clientesPorId[d.clientId]?.nome || 'Cliente removido' }} · Vence {{ fmtD(d.vencimentoExtra) }}<span v-if="d.pagoExtra"> · Recebido {{ fmtD(d.pagoEmExtra) }}</span></p></div>
-            <div class="text-right"><p class="font-bold"><ValorPrivado :valor="d.valorExtra" /></p><p :class="['text-xs', !d.pagoExtra && d.vencimentoExtra! < todayStr() ? 'text-destructive' : 'text-muted-foreground']">{{ d.pagoExtra ? 'Recebido' : d.vencimentoExtra! < todayStr() ? 'Em atraso' : 'A receber' }}</p></div>
+            <div class="min-w-0 max-w-full text-right"><p class="font-bold"><ValorPrivado :valor="d.valorExtra" /></p><p :class="['text-xs', !d.pagoExtra && d.vencimentoExtra! < todayStr() ? 'text-destructive' : 'text-muted-foreground']">{{ d.pagoExtra ? 'Recebido' : d.vencimentoExtra! < todayStr() ? 'Em atraso' : 'A receber' }}</p></div>
             <PagamentoData :titulo="d.titulo" :data-inicial="d.pagoExtra ? d.pagoEmExtra : undefined" :rotulo="d.pagoExtra ? 'Editar data' : 'Marcar recebido'" :salvar-data="data => salvar(() => db.atualizar('itens', d.id, { pagoExtra: true, pagoEmExtra: data }), 'Data do recebimento salva')" /><Button v-if="d.pagoExtra" size="sm" variant="outline" :disabled="extraBusy" @click="pagarExtra(d)">Desfazer recebimento</Button>
           </div>
           <RouterLink to="/producao?area=extras" class="text-primary text-sm underline">Abrir demandas extras para editar valores</RouterLink>
@@ -150,7 +150,7 @@ async function salvarMes() {
               </div>
             </div>
             <PagBadge :status="st" />
-            <div class="min-w-32 text-right tabular"><p class="font-bold"><ValorPrivado :valor="val" /> <span class="text-muted-foreground text-xs font-normal">dinheiro</span></p><p class="text-muted-foreground text-xs"><ValorPrivado :valor="permuta" /> em permuta</p></div>
+            <div class="min-w-0 max-w-full text-right tabular"><p class="font-bold"><ValorPrivado :valor="val" /> <span class="text-muted-foreground text-xs font-normal">dinheiro</span></p><p class="text-muted-foreground text-xs"><ValorPrivado :valor="permuta" /> em permuta</p></div>
             <div class="flex flex-wrap gap-1.5">
               <Button variant="ghost" size="sm" @click="editar(c)"><Pencil />Editar mês</Button>
               <Button v-if="st === 'dispensado'" variant="outline" size="sm" @click="reativar(c)"><Undo2 />Reativar cobrança</Button>

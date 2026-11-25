@@ -100,22 +100,22 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
         <CardDescription>Entradas em dinheiro das mensalidades e demandas extras menos as despesas com vencimento neste mês. Inclui valores já recebidos e pagos.</CardDescription>
       </CardHeader>
       <CardContent class="grid gap-4">
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Entradas previstas</p><p class="mt-1 text-2xl font-bold tabular"><ValorPrivado :valor="saldo.entradas" /></p><p class="text-muted-foreground mt-2 text-xs"><ValorPrivado :valor="saldo.recebido" /> recebidos · <ValorPrivado :valor="saldo.aReceber" /> a receber</p></div>
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Despesas previstas</p><p class="mt-1 text-2xl font-bold tabular"><ValorPrivado :valor="saldo.despesas" /></p><p class="text-muted-foreground mt-2 text-xs"><ValorPrivado :valor="saldo.pago" /> pagos · <ValorPrivado :valor="saldo.aPagar" /> a pagar</p></div>
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai sobrar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.sobra > 0 && 'text-success']"><ValorPrivado :valor="saldo.sobra" /></p><p class="text-muted-foreground mt-2 text-xs">Após cobrir todas as despesas previstas.</p></div>
-          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai faltar no mês</p><p :class="['mt-1 text-2xl font-bold tabular', saldo.falta > 0 && 'text-destructive']"><ValorPrivado :valor="saldo.falta" /></p><p class="text-muted-foreground mt-2 text-xs">Valor adicional necessário para cobrir o mês.</p></div>
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Entradas previstas</p><p class="mt-1 text-xl font-bold tabular"><ValorPrivado :valor="saldo.entradas" /></p><p class="text-muted-foreground mt-2 text-xs"><ValorPrivado :valor="saldo.recebido" /> recebidos · <ValorPrivado :valor="saldo.aReceber" /> a receber</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Despesas previstas</p><p class="mt-1 text-xl font-bold tabular"><ValorPrivado :valor="saldo.despesas" /></p><p class="text-muted-foreground mt-2 text-xs"><ValorPrivado :valor="saldo.pago" /> pagos · <ValorPrivado :valor="saldo.aPagar" /> a pagar</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai sobrar no mês</p><p :class="['mt-1 text-xl font-bold tabular', saldo.sobra > 0 && 'text-success']"><ValorPrivado :valor="saldo.sobra" /></p><p class="text-muted-foreground mt-2 text-xs">Após cobrir todas as despesas previstas.</p></div>
+          <div class="bg-secondary rounded-lg p-4"><p class="text-muted-foreground text-sm">Vai faltar no mês</p><p :class="['mt-1 text-xl font-bold tabular', saldo.falta > 0 && 'text-destructive']"><ValorPrivado :valor="saldo.falta" /></p><p class="text-muted-foreground mt-2 text-xs">Valor adicional necessário para cobrir o mês.</p></div>
         </div>
         <p :class="['text-sm font-semibold', saldo.saldo < 0 ? 'text-destructive' : saldo.saldo > 0 ? 'text-success' : 'text-muted-foreground']">{{ saldo.saldo > 0 ? `Previsão de sobra de ${brl(saldo.sobra)}.` : saldo.saldo < 0 ? `As despesas superam as entradas em ${brl(saldo.falta)}.` : 'Entradas e despesas previstas estão equilibradas.' }}</p>
         <p class="text-muted-foreground text-xs">Projeção, não saldo bancário. Não inclui saldo anterior, permutas, cobranças dispensadas ou contas excluídas. Sempre considera o mês selecionado no topo, mesmo ao listar todos os meses.</p>
         <RouterLink to="/financeiro" class="text-primary text-sm font-semibold underline underline-offset-4">Ver contas a receber deste mês</RouterLink>
       </CardContent>
     </Card>
-    <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Card class="gap-1"><CardHeader><CardDescription>Total de despesas</CardDescription><CardTitle class="text-2xl tabular"><ValorPrivado :valor="totais.total" /></CardTitle></CardHeader></Card>
-      <Card class="gap-1"><CardHeader><CardDescription>Pago</CardDescription><CardTitle class="text-success text-2xl tabular"><ValorPrivado :valor="totais.pago" /></CardTitle></CardHeader></Card>
-      <Card class="gap-1"><CardHeader><CardDescription>A pagar</CardDescription><CardTitle class="text-2xl tabular"><ValorPrivado :valor="totais.aberto" /></CardTitle></CardHeader></Card>
-      <Card class="gap-1"><CardHeader><CardDescription>Em atraso</CardDescription><CardTitle class="text-destructive text-2xl tabular"><ValorPrivado :valor="totais.atrasado" /></CardTitle></CardHeader></Card>
+    <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
+      <Card class="gap-1"><CardHeader><CardDescription>Total de despesas</CardDescription><CardTitle class="text-xl tabular"><ValorPrivado :valor="totais.total" /></CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>Pago</CardDescription><CardTitle class="text-success text-xl tabular"><ValorPrivado :valor="totais.pago" /></CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>A pagar</CardDescription><CardTitle class="text-xl tabular"><ValorPrivado :valor="totais.aberto" /></CardTitle></CardHeader></Card>
+      <Card class="gap-1"><CardHeader><CardDescription>Em atraso</CardDescription><CardTitle class="text-destructive text-xl tabular"><ValorPrivado :valor="totais.atrasado" /></CardTitle></CardHeader></Card>
     </div>
     <Card>
       <CardHeader class="gap-3">
@@ -141,7 +141,7 @@ async function alterar(c: ContaPagar, dados: Record<string, unknown>, mensagem: 
             <p v-if="c.recorrenciaFim" class="text-muted-foreground text-xs">Mensal · {{ c.parcela }}/{{ c.totalParcelas }} · até {{ fmtMes(c.recorrenciaFim) }}</p>
           </div>
           <span v-if="c.excluida" class="text-muted-foreground text-sm">Excluída</span><PagBadge v-else :status="statusConta(c)" />
-          <span class="min-w-24 text-right font-bold tabular"><ValorPrivado :valor="c.valor" /></span>
+          <span class="min-w-0 max-w-full text-right font-bold tabular"><ValorPrivado :valor="c.valor" /></span>
           <div class="flex flex-wrap gap-1.5">
             <Button v-if="c.excluida" variant="outline" size="sm" :disabled="ocupado" @click="alterar(c, { excluida: false }, 'Conta restaurada')"><Undo2 />Restaurar</Button>
             <template v-else>

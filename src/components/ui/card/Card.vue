@@ -4,5 +4,5 @@ import { cn } from '@/lib/utils'
 const props = defineProps<{ class?: HTMLAttributes['class'] }>()
 </script>
 <template>
-  <div data-slot="card" :class="cn('bg-card text-card-foreground flex flex-col gap-5 rounded-xl border py-5 shadow-xs', props.class)"><slot /></div>
+  <div data-slot="card" :class="cn('bg-card text-card-foreground flex min-w-0 flex-col gap-5 rounded-xl border py-5 shadow-xs', props.class)"><slot /></div>
 </template>

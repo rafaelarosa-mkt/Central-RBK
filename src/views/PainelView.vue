@@ -120,7 +120,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
       <!-- números do mês -->
       <section>
         <p class="text-muted-foreground mb-2.5 text-xs font-bold tracking-wider uppercase">Mês de {{ fmtMes(mesAtual) }}</p>
-        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-3">
           <Card class="gap-3">
             <CardHeader><CardDescription>Vídeos gravados</CardDescription>
               <CardTitle class="text-3xl font-extrabold tabular"><span class="text-rec">{{ totais.grav }}</span><span class="text-muted-foreground text-lg font-semibold"> / {{ totais.meta }}</span></CardTitle></CardHeader>
@@ -138,7 +138,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
           </Card>
           <Card class="gap-3">
             <CardHeader><CardDescription>Recebido em dinheiro</CardDescription>
-              <CardTitle class="text-2xl font-extrabold tabular"><ValorPrivado :valor="totais.rec" /></CardTitle></CardHeader>
+              <CardTitle class="text-xl font-extrabold tabular"><ValorPrivado :valor="totais.rec" /></CardTitle></CardHeader>
             <CardContent class="flex flex-col gap-2">
               <Progress v-if="valoresVisiveis" :model-value="pct(totais.rec, totais.prev)" indicator-class="bg-success" />
               <span class="text-muted-foreground text-xs">de <ValorPrivado :valor="totais.prev" /> previstos</span>
@@ -210,7 +210,7 @@ const pct = (a: number, b: number) => (b ? Math.min(100, (a / b) * 100) : 0)
         <CardHeader><CardTitle>Clientes no mês</CardTitle><CardDescription>Toque num cliente para ver a produção dele</CardDescription></CardHeader>
         <CardContent class="px-0">
           <button v-for="{ c, p, st } in linhas" :key="c.id" type="button"
-            class="hover:bg-secondary/60 grid w-full grid-cols-1 gap-3 border-t px-5 py-3.5 text-left first:border-t-0 md:grid-cols-[minmax(180px,1.2fr)_1fr_1fr_auto] md:items-center md:gap-6"
+            class="hover:bg-secondary/60 grid w-full grid-cols-1 gap-3 border-t px-5 py-3.5 text-left first:border-t-0 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-4"
             @click="router.push({ path: '/producao', query: { cliente: c.id } })">
             <span class="flex min-w-0 items-center gap-2.5"><ClientDot :cliente="c" />
               <span class="min-w-0"><span class="block truncate font-semibold">{{ c.nome }}</span><span class="text-muted-foreground block truncate text-xs">{{ c.plano || 'Plano não informado' }}</span></span></span>
