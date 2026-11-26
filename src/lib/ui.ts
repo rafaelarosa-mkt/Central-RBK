@@ -23,7 +23,9 @@ export async function salvar(fn: () => Promise<unknown>, msg: string) {
     const t = String(e?.message || '')
     toast.error(t.includes('row-level security') || e?.code === '42501'
       ? 'Seu e-mail não tem permissão para editar. Confira a lista de e-mails no Supabase.'
-      : 'Não foi possível salvar. Verifique a internet e tente de novo.')
+      : /timeout|timed out|abort/i.test(t)
+        ? 'A conexão demorou e não foi possível confirmar o salvamento. Confira se a alteração apareceu antes de tentar novamente.'
+        : 'Não foi possível salvar. Verifique a internet e tente de novo.')
     return false
   }
 }

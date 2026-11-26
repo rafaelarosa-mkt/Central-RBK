@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import ValorInput from '@/components/app/ValorInput.vue'
-import { computed, reactive, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -30,7 +30,9 @@ const fim = computed(() => {
   const k = contrato({ inicioContrato: f.inicioContrato, mesesContrato: Number(f.mesesContrato) || null })
   return k ? `Contrato vai de ${fmtBR(k.ini)} até ${fmtBR(k.fim)}.` : 'Preencha início e duração para calcular o término.'
 })
+const gravando = ref(false)
 async function enviar() {
+  if (gravando.value) return
   if (!f.nome.trim()) return
   if (f.visitasMes !== '' && (!Number.isInteger(Number(f.visitasMes)) || Number(f.visitasMes) < 0)) return
   if (![f.valor, f.valorPermuta].every(v => Number.isFinite(Number(v)) && Number(v) >= 0)) return
@@ -39,10 +41,13 @@ async function enviar() {
     valorPermuta: Number(f.valorPermuta) || 0, diaPgto: Number(f.diaPgto) || null, mesesContrato: Number(f.mesesContrato) || null,
   }
   const c = atual.value
+  gravando.value = true
+  try {
   const ok = await salvar(() => c
     ? db.salvar('clients', c.id, { ...(({ id, ...r }: Cliente) => r)(c), ...d, atualizado: Date.now() })
     : db.criar('clients', { ...d, criado: Date.now() }), 'Cliente salvo')
   if (ok) fechar()
+  } finally { gravando.value = false }
 }
 </script>
 
@@ -83,7 +88,7 @@ async function enviar() {
         <label class="flex items-center gap-2 text-sm sm:col-span-2"><input id="cAtivo" v-model="f.ativo" type="checkbox" class="accent-primary size-4"> Cliente ativo (desmarque para arquivar)</label>
         <DialogFooter class="sm:col-span-2">
           <Button type="button" variant="outline" @click="fechar">Cancelar</Button>
-          <Button type="submit">Salvar</Button>
+          <Button type="submit" :disabled="gravando">{{ gravando ? 'Salvando…' : 'Salvar' }}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

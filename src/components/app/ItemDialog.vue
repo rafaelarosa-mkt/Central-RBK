@@ -46,21 +46,26 @@ async function anexar(e: Event) {
 }
 const abrirAnexo = (a: Anexo) => arquivos.abrir(a.id).catch(() => toast.error('Não foi possível abrir o arquivo.'))
 
+const gravando = ref(false)
 async function enviar() {
+  if (gravando.value) return
   if (!f.clientId || !f.mes) { toast.error('Escolha o cliente e o mês.'); return }
   const { qtd, ...campos } = f
   const d = { ...campos, anexos: anexos.value, atualizado: Date.now() }
+  gravando.value = true
+  try {
   if (novo.value) {
     const q = Math.max(1, Math.min(30, Number(qtd) || 1))
     const base = d.titulo || (d.tipo === 'post' ? 'Post' : 'Vídeo')
     const ok = await salvar(async () => {
-      for (let k = 1; k <= q; k++) await db.criar('itens', { ...d, titulo: q > 1 ? `${base} ${k}` : base, anexos: k === 1 ? d.anexos : [], roteiro: k === 1 ? d.roteiro : '' })
+      await db.criarLote('itens', Array.from({ length: q }, (_, i) => ({ ...d, titulo: q > 1 ? base + ' ' + (i + 1) : base, anexos: i === 0 ? d.anexos : [], roteiro: i === 0 ? d.roteiro : '' })))
     }, q > 1 ? `${q} conteúdos criados` : 'Conteúdo criado')
     if (ok) fechar()
   } else {
     const { id, ...resto } = atual.value as Item
     if (await salvar(() => db.salvar('itens', id, { ...resto, ...d }), 'Conteúdo salvo')) fechar()
   }
+  } finally { gravando.value = false }
 }
 async function excluir() {
   if (!confirmarExcluir.value) { confirmarExcluir.value = true; return }
@@ -121,7 +126,7 @@ const rotuloEtapa = (s: Status) => (LBL.video[s] === LBL.post[s] ? LBL.video[s] 
         <DialogFooter class="sm:col-span-2">
           <Button v-if="!novo" type="button" variant="ghost" class="text-destructive mr-auto" @click="excluir">{{ confirmarExcluir ? 'Confirmar exclusão' : 'Excluir' }}</Button>
           <Button type="button" variant="outline" @click="fechar">Cancelar</Button>
-          <Button type="submit" :disabled="enviando">Salvar</Button>
+          <Button type="submit" :disabled="enviando || gravando">{{ gravando ? 'Salvando…' : 'Salvar' }}</Button>
         </DialogFooter>
       </form>
     </DialogContent>

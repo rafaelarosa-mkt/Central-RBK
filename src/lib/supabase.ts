@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
+import { criarFetchComPrazo } from './sincronizacao'
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
 
 export const configurado = Boolean(url && key)
 export const supabase = configurado
-  ? createClient(url!, key!, { auth: { persistSession: true, autoRefreshToken: true } })
+  ? createClient(url!, key!, { auth: { persistSession: true, autoRefreshToken: true }, global: { fetch: criarFetchComPrazo(fetch) } })
   : null

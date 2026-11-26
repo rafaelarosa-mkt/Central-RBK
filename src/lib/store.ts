@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase, configurado } from './supabase'
 import type { Cliente, ContaPagar, Evento, Item, Pagamento } from './domain'
 import { ymNow } from './domain'
+import { aplicarRegistro, criarListaEstavel } from './sincronizacao'
 import { separarProducao } from './extras'
 import type { Visita } from './visitas'
 
@@ -22,8 +23,10 @@ export const carregado = ref(false)
 export const erroDados = ref('')
 export const mesAtual = ref(ymNow())
 
-const lista = <T>(col: Colecao) => computed(() =>
-  Object.entries(cache[col]).map(([id, d]) => ({ id, ...d }) as T))
+const lista = <T>(col: Colecao) => {
+  const montar = criarListaEstavel<T>()
+  return computed(() => montar(cache[col]))
+}
 
 export const clientes = lista<Cliente>('clients')
 const registrosProducao = lista<Item>('itens')
@@ -94,7 +97,7 @@ function ouvirMudancas() {
       const row = p.new
       const col = row?.colecao as Colecao
       if (!col || !(col in cache)) return
-      cache[col][row.id] = row.dados
+      aplicarRegistro(cache[col], row.id, row.dados)
     })
     .subscribe()
   document.addEventListener('visibilitychange', () => {
@@ -105,7 +108,7 @@ function ouvirMudancas() {
 async function gravar(col: Colecao, id: string, dados: Record<string, unknown>) {
   const { error } = await supabase!.from(TABELA).upsert({ colecao: col, id, dados, atualizado: new Date().toISOString() }, { onConflict: 'colecao,id' })
   if (error) throw error
-  cache[col][id] = dados
+  aplicarRegistro(cache[col], id, dados)
 }
 
 export const db = {
@@ -115,8 +118,9 @@ export const db = {
     const rows = registros.map(({ id, dados }) => ({ colecao: col, id, dados, atualizado: new Date().toISOString() }))
     const { error } = await supabase!.from(TABELA).upsert(rows, { onConflict: 'colecao,id' })
     if (error) throw error
-    for (const { id, dados } of registros) cache[col][id] = dados
+    for (const { id, dados } of registros) aplicarRegistro(cache[col], id, dados)
   },
+  criarLote: (col: Colecao, dados: Record<string, unknown>[]) => db.salvarLote(col, dados.map(d => ({ id: novoId(), dados: d }))),
   criar: (col: Colecao, dados: Record<string, unknown>) => gravar(col, novoId(), dados),
   salvar: (col: Colecao, id: string, dados: Record<string, unknown>) => gravar(col, id, dados),
   atualizar: (col: Colecao, id: string, parcial: Record<string, unknown>) => gravar(col, id, { ...(cache[col][id] || {}), ...parcial }),
